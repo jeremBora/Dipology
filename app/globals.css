@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'Dodger';
+  src: url('/fonts/dodger-title.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --bg-deep:      #020a04;
+  --bg-panel:     #040d06;
+  --bg-row:       #050e07;
+  --bg-row-hover: #071409;
+  --bg-heatmap:   #030805;
+  --border:       #0a2010;
+  --border-glow:  #00ff4422;
+  --accent:       #00ff44;
+  --accent-dim:   #00ff4444;
+  --accent-faint: #00ff4411;
+  --green-live:   #00ff88;
+  --text-primary: #d0f0d8;
+  --text-muted:   #4a9060;
+  --text-dim:     #1a4028;
+  --warn:         #ff9f43;
+  --warn-bg:      #ff6b0012;
+  --warn-border:  #ff6b0033;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-deep); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, #00ff4418 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 40%, #00ff4412 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 10%, #00ff4410 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 60%, #00ff4414 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 25%, #00ff4410 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 75%, #00ff4416 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 5%,  #00ff4412 0%, transparent 100%),
+    radial-gradient(1px 1px at 5%  85%, #00ff4410 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 90%, #00ff4414 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 70%, #00ff4410 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 50%, #00ff4412 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 80%, #00ff4410 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 35%, #00ff4408 0%, transparent 100%),
+    radial-gradient(1px 1px at 95% 55%, #00ff4412 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  top: -30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 60%;
+  background: radial-gradient(ellipse, #00ff4408 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.3; transform: scale(0.8); }
+}
+
+@keyframes fadeInRow {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes expandDown {
+  from { opacity: 0; transform: scaleY(0.95); }
+  to   { opacity: 1; transform: scaleY(1); }
+}
+
+.row-animate { animation: fadeInRow 0.25s ease both; }
+.heatmap-animate { animation: expandDown 0.2s ease both; transform-origin: top; }
