@@ -62,7 +62,7 @@ function PercentileBar({ pct, color }: { pct: number; color: string }) {
   )
 }
 
-function ScreenerRow({ data, index }: { data: ContractData; index: number }) {
+export default function ScreenerRow({ data, index }: { data: ContractData; index: number }) {
   const [open, setOpen] = useState(false)
   const base = data.symbol.replace('USDT', '')
 
@@ -264,4 +264,3 @@ function ScreenerRow({ data, index }: { data: ContractData; index: number }) {
     </div>
   )
 }
-export default HeatmapRow
