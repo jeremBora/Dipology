@@ -256,3 +256,4 @@ export default function ScreenerRow({ data, index }: { data: ContractData; index
     </div>
   )
 }
+
