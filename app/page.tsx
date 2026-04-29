@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import ScreenerRow, { ContractData } from '@/components/ScreenerRow'
+import ColumnPicker, { ExtraCol } from '@/components/ColumnPicker'
+import FilterBar, { Filters, defaultFilters, applyVolFilter } from '@/components/FilterBar'
 
-type SortKey = 'symbol' | 'rsiD' | 'rsiW' | 'vol24h' | 'spotRatio' | 'ratioFS'
+type SortKey = 'symbol' | 'momentumD' | 'momentumW' | 'vol24h' | 'spotRatio' | 'ratioFS'
 type SortDir = 'asc' | 'desc'
 
 const BATCH_SIZE = 20
@@ -20,10 +22,12 @@ export default function Home() {
   const [contracts, setContracts]       = useState<Map<string, ContractData>>(new Map())
   const [symbols, setSymbols]           = useState<string[]>([])
   const [totalSymbols, setTotalSymbols] = useState(0)
-  const [sortKey, setSortKey]           = useState<SortKey>('vol24h')
+  const [sortKey, setSortKey]           = useState<SortKey>('momentumD')
   const [sortDir, setSortDir]           = useState<SortDir>('desc')
   const [loadedCount, setLoadedCount]   = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [extraCols, setExtraCols]       = useState<Set<ExtraCol>>(new Set())
+  const [filters, setFilters]           = useState<Filters>(defaultFilters)
   const [theme, setTheme]               = useState<'dark' | 'light'>('dark')
   const refreshTimer                    = useRef<ReturnType<typeof setInterval> | null>(null)
   const abortRef                        = useRef<AbortController | null>(null)
@@ -112,24 +116,51 @@ export default function Home() {
     return () => { if (refreshTimer.current) clearInterval(refreshTimer.current) }
   }, [symbols, loadBatch])
 
+  function toggleExtraCol(col: ExtraCol) {
+    setExtraCols(prev => {
+      const next = new Set(prev)
+      next.has(col) ? next.delete(col) : next.add(col)
+      return next
+    })
+  }
+
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortKey(key); setSortDir(key === 'symbol' ? 'asc' : 'desc') }
   }
 
+  function applyFilters(c: ContractData): boolean {
+    const md = c.daily?.live !== null ? (c.daily.live ?? 0) / 10 : null
+    const mw = c.weekly?.live !== null ? (c.weekly.live ?? 0) / 10 : null
+    const mdPrev = c.daily?.history?.slice(-1)[0]
+    const mwPrev = c.weekly?.history?.slice(-1)[0]
+    const sd = c.daily?.score !== null ? c.daily.score : null
+    const sw = c.weekly?.score !== null ? c.weekly.score : null
+
+    if (filters.momentumDLive !== '' && md !== null && md < parseFloat(filters.momentumDLive)) return false
+    if (filters.momentumDPrev !== '' && mdPrev !== null && mdPrev !== undefined && (mdPrev/10) < parseFloat(filters.momentumDPrev)) return false
+    if (filters.momentumWLive !== '' && mw !== null && mw < parseFloat(filters.momentumWLive)) return false
+    if (filters.momentumWPrev !== '' && mwPrev !== null && mwPrev !== undefined && (mwPrev/10) < parseFloat(filters.momentumWPrev)) return false
+    if (filters.scorePctD !== '' && sd !== null && sd < parseFloat(filters.scorePctD)) return false
+    if (filters.scorePctW !== '' && sw !== null && sw < parseFloat(filters.scorePctW)) return false
+    if (!applyVolFilter(c.vol24h ?? 0, filters.vol24hMin)) return false
+    return true
+  }
+
   function getSortedRows(): ContractData[] {
-    return Array.from(contracts.values()).sort((a, b) => {
+    const filtered = Array.from(contracts.values()).filter(c => !c.loading && applyFilters(c))
+    return filtered.sort((a, b) => {
       if (sortKey !== 'symbol') {
         if (a.incomplete && !b.incomplete) return 1
         if (!a.incomplete && b.incomplete) return -1
       }
       let va: number | string = 0, vb: number | string = 0
-      if (sortKey === 'symbol')    { va = a.symbol;              vb = b.symbol }
-      if (sortKey === 'rsiD')      { va = a.daily?.score  ?? -1; vb = b.daily?.score  ?? -1 }
-      if (sortKey === 'rsiW')      { va = a.weekly?.score ?? -1; vb = b.weekly?.score ?? -1 }
-      if (sortKey === 'vol24h')    { va = a.vol24h ?? 0;         vb = b.vol24h ?? 0 }
-      if (sortKey === 'spotRatio') { va = a.spotRatio ?? -1;     vb = b.spotRatio ?? -1 }
-      if (sortKey === 'ratioFS')   { va = a.ratioFS ?? 999999;   vb = b.ratioFS ?? 999999 }
+      if (sortKey === 'symbol')    { va = a.symbol;                vb = b.symbol }
+      if (sortKey === 'momentumD') { va = a.daily?.score  ?? -1;   vb = b.daily?.score  ?? -1 }
+      if (sortKey === 'momentumW') { va = a.weekly?.score ?? -1;   vb = b.weekly?.score ?? -1 }
+      if (sortKey === 'vol24h')    { va = a.vol24h ?? 0;           vb = b.vol24h ?? 0 }
+      if (sortKey === 'spotRatio') { va = a.spotRatio ?? -1;       vb = b.spotRatio ?? -1 }
+      if (sortKey === 'ratioFS')   { va = a.ratioFS ?? 999999;     vb = b.ratioFS ?? 999999 }
       if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb as string) : (vb as string).localeCompare(va)
       return sortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number)
     })
@@ -139,16 +170,26 @@ export default function Home() {
   const pct       = totalSymbols > 0 ? Math.round((loadedCount / totalSymbols) * 100) : 0
   const allLoaded = loadedCount >= totalSymbols && totalSymbols > 0
 
-  function ColBtn({ col, label, align, tooltip }: {
-    col: SortKey; label: string; align?: string; tooltip?: string
-  }) {
+  // Grid columns based on active extra cols
+  const showSpotRatio = extraCols.has('spotRatio' as ExtraCol)
+  const showRatioFS   = extraCols.has('ratioFS' as ExtraCol)
+  const showMomDPrev  = extraCols.has('momentumDPrev')
+  const showMomWPrev  = extraCols.has('momentumWPrev')
+  const showScoreD    = extraCols.has('scorePctD')
+  const showScoreW    = extraCols.has('scorePctW')
+
+  const colCount = 4 + (showMomDPrev?1:0) + (showMomWPrev?1:0) + (showScoreD?1:0) + (showScoreW?1:0) + (showSpotRatio?1:0) + (showRatioFS?1:0)
+  const gridCols = `2fr repeat(${colCount - 1}, 1fr)`
+
+  function ColBtn({ col, label, align }: { col: SortKey; label: string; align?: string }) {
     const active = sortKey === col
     return (
-      <button onClick={() => handleSort(col)} title={tooltip} style={{
+      <button onClick={() => handleSort(col)} style={{
         background: 'none', border: 'none',
         color: active ? 'var(--accent)' : 'var(--text-dim)',
         fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
-        fontFamily: 'Syne, sans-serif', fontWeight: 500, cursor: 'pointer',
+        fontFamily: 'Syne, sans-serif', fontWeight: 500,
+        cursor: 'pointer',
         display: 'flex', alignItems: 'center',
         justifyContent: align === 'left' ? 'flex-start' : 'center',
         gap: 4, padding: '10px 12px', width: '100%',
@@ -175,8 +216,18 @@ export default function Home() {
     )
   }
 
+  function SimpleColHeader({ label }: { label: string }) {
+    return (
+      <div style={{
+        color: 'var(--text-dim)', fontSize: 10, letterSpacing: 2,
+        textTransform: 'uppercase', fontFamily: 'Syne, sans-serif',
+        fontWeight: 500, padding: '10px 12px', textAlign: 'center',
+      }}>{label}</div>
+    )
+  }
+
   return (
-    <main style={{ position: 'relative', zIndex: 1, padding: '24px 16px', maxWidth: 1300, margin: '0 auto' }}>
+    <main style={{ position: 'relative', zIndex: 1, padding: '24px 16px', maxWidth: 1400, margin: '0 auto' }}>
 
       <div style={{ textAlign: 'center', padding: '28px 0 24px', position: 'relative' }}>
         {/* Bouton thème */}
@@ -230,41 +281,59 @@ export default function Home() {
         </div>
       )}
 
-      {/* Légende percentile */}
-      <div style={{ marginBottom: 10, fontSize: 9, color: 'var(--text-dim)', letterSpacing: 1 }}>
-        <span style={{ color: '#00e676' }}>■</span> top 20% &nbsp;
-        <span style={{ color: '#fff176' }}>■</span> milieu 60% &nbsp;
-        <span style={{ color: '#ef5350' }}>■</span> bas 20%
-        &nbsp;— couleurs relatives au marché en cours
-      </div>
+      {/* FilterBar */}
+      <FilterBar
+        filters={filters}
+        onChange={setFilters}
+        activeCount={sorted.length}
+        totalCount={Array.from(contracts.values()).filter(c => !c.loading).length}
+      />
 
       <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+        {/* Header */}
         <div style={{
-          display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr',
+          display: 'grid', gridTemplateColumns: gridCols,
           background: theme === 'dark' ? '#060910' : '#f0faf4',
           borderBottom: '1px solid var(--border)',
         }}>
-          <ColBtn col="symbol"    label="Contrat"    align="left" />
-          <ColBtn col="rsiD"      label="RSI Daily" />
-          <ColBtn col="rsiW"      label="RSI Weekly" />
+          <ColBtn col="symbol"    label="Contrat" align="left" />
+          <ColBtn col="momentumD" label="Momentum D" />
+          <ColBtn col="momentumW" label="Momentum W" />
           <ColBtn col="vol24h"    label="Vol 24H" />
-          <ColBtn col="spotRatio" label="Spot Ratio"
-            tooltip="% spot dans le volume total. Plus c'est élevé = demande réelle. Coloré par percentile relatif." />
-          <ColBtn col="ratioFS"   label="Ratio F/S"
-            tooltip="Futures ÷ Spot. Plus c'est bas = moins spéculatif. Coloré par percentile relatif." />
+          {showMomDPrev && <SimpleColHeader label="Mom D-1" />}
+          {showMomWPrev && <SimpleColHeader label="Mom W-1" />}
+          {showScoreD   && <SimpleColHeader label="Score D" />}
+          {showScoreW   && <SimpleColHeader label="Score W" />}
+          {showSpotRatio && <ColBtn col="spotRatio" label="Spot Ratio" />}
+          {showRatioFS   && <ColBtn col="ratioFS"   label="Ratio F/S" />}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px' }}>
+            <ColumnPicker
+              active={extraCols}
+              onToggle={toggleExtraCol}
+            />
+          </div>
         </div>
+
         <div>
           {sorted.length === 0 && (
             <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>
-              chargement des contrats…
+              {allLoaded ? 'aucun résultat' : 'chargement des contrats…'}
             </div>
           )}
-          {sorted.map((row, i) => <ScreenerRow key={row.symbol} data={row} index={i} />)}
+          {sorted.map((row, i) => (
+            <ScreenerRow
+              key={row.symbol}
+              data={row}
+              index={i}
+              extraCols={extraCols}
+              gridCols={gridCols}
+            />
+          ))}
         </div>
       </div>
 
       <div style={{ textAlign: 'center', marginTop: 24, fontSize: 10, color: 'var(--text-dim)', letterSpacing: 2, fontWeight: 300 }}>
-        données binance futures · usdt perpétuel · rsi 14 périodes
+        données binance futures · usdt perpétuel · momentum = rsi ÷ 10
       </div>
     </main>
   )
