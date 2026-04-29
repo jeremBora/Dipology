@@ -18,10 +18,10 @@ export interface ContractData {
   weekly: RsiData
   vol24h: number
   volSpot: number | null
-  spotRatio: number | null    // % volume spot / (spot + futures)
-  ratioFS: number | null      // futures / spot
-  spotRatioPct: number | null // percentile rank (0-100) — calculé dans page.tsx
-  ratioFSPct: number | null   // percentile rank inversé (0-100) — calculé dans page.tsx
+  spotRatio: number | null
+  ratioFS: number | null
+  spotRatioPct: number | null
+  ratioFSPct: number | null
   incomplete: boolean
   loading?: boolean
   error?: boolean
@@ -34,10 +34,6 @@ function formatVol(v: number): string {
   return '$' + v.toFixed(0)
 }
 
-// Couleur basée sur le percentile (0-100)
-// 80-100 = top 20% = vert
-// 20-79  = milieu 60% = jaune
-// 0-19   = bas 20% = rouge
 function percentileColor(pct: number): string {
   if (pct >= 80) return '#00e676'
   if (pct >= 60) return '#69f0ae'
@@ -66,22 +62,25 @@ export default function ScreenerRow({ data, index }: { data: ContractData; index
   const [open, setOpen] = useState(false)
   const base = data.symbol.replace('USDT', '')
 
-  const dScore      = data.daily?.score
-  const wScore      = data.weekly?.score
-  const spotRatio   = data.spotRatio
-  const ratioFS     = data.ratioFS
-  const srPct       = data.spotRatioPct
-  const fsPct       = data.ratioFSPct
+  const dScore    = data.daily?.score
+  const wScore    = data.weekly?.score
+  const spotRatio = data.spotRatio
+  const ratioFS   = data.ratioFS
+  const srPct     = data.spotRatioPct
+  const fsPct     = data.ratioFSPct
+
+  const dHistory: (number | null)[] = data.daily?.history ?? []
+  const dLive: number | null        = data.daily?.live ?? null
+  const dScore2: number | null      = data.daily?.score ?? null
+  const wHistory: (number | null)[] = data.weekly?.history ?? []
+  const wLive: number | null        = data.weekly?.live ?? null
+  const wScore2: number | null      = data.weekly?.score ?? null
 
   return (
     <div
       className="row-animate"
-      style={{
-        borderBottom: '1px solid #0a0f1e',
-        animationDelay: `${Math.min(index * 20, 400)}ms`,
-      }}
+      style={{ borderBottom: '1px solid #0a0f1e', animationDelay: `${Math.min(index * 20, 400)}ms` }}
     >
-      {/* Ligne principale */}
       <div
         onClick={() => !data.loading && setOpen(o => !o)}
         style={{
@@ -100,10 +99,8 @@ export default function ScreenerRow({ data, index }: { data: ContractData; index
         {/* Contrat */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{
-            fontSize: 8,
-            color: open ? 'var(--accent-dim)' : 'var(--text-dim)',
-            transition: 'transform 0.2s, color 0.2s',
-            display: 'inline-block',
+            fontSize: 8, color: open ? 'var(--accent-dim)' : 'var(--text-dim)',
+            transition: 'transform 0.2s, color 0.2s', display: 'inline-block',
             transform: open ? 'rotate(90deg)' : 'none',
           }}>▶</span>
           <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', letterSpacing: 0.5 }}>
@@ -183,32 +180,21 @@ export default function ScreenerRow({ data, index }: { data: ContractData; index
         </div>
       </div>
 
-      {/* Panneau heatmap */}
+      {/* Heatmap */}
       {open && !data.loading && (
-        <div
-          className="heatmap-animate"
-          style={{ padding: '14px 24px 18px', background: 'var(--bg-heatmap)' }}
-        >
-          <div style={{
-            fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3,
-            textTransform: 'uppercase', marginBottom: 10, fontWeight: 400,
-          }}>
+        <div className="heatmap-animate" style={{ padding: '14px 24px 18px', background: 'var(--bg-heatmap)' }}>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10, fontWeight: 400 }}>
             {base} / usdt — rsi heatmap
           </div>
 
-          {/* Résumé Spot Ratio + Ratio F/S */}
           {(spotRatio !== null || ratioFS !== null) && (
             <div style={{ display: 'flex', gap: 24, marginBottom: 14, flexWrap: 'wrap' }}>
               {spotRatio !== null && srPct !== null && (
                 <div style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: 1 }}>
                   spot ratio{' '}
-                  <span style={{ color: percentileColor(srPct), fontWeight: 600 }}>
-                    {spotRatio.toFixed(1)}%
-                  </span>
+                  <span style={{ color: percentileColor(srPct), fontWeight: 600 }}>{spotRatio.toFixed(1)}%</span>
                   <span style={{ color: 'var(--text-dim)', marginLeft: 6, fontSize: 9 }}>
-                    {srPct >= 80 ? '— demande réelle forte'
-                      : srPct >= 40 ? '— mixte'
-                      : '— dominante spéculative'}
+                    {srPct >= 80 ? '— demande réelle forte' : srPct >= 40 ? '— mixte' : '— dominante spéculative'}
                   </span>
                 </div>
               )}
@@ -219,16 +205,13 @@ export default function ScreenerRow({ data, index }: { data: ContractData; index
                     {ratioFS >= 10 ? ratioFS.toFixed(1) : ratioFS.toFixed(2)}x
                   </span>
                   <span style={{ color: 'var(--text-dim)', marginLeft: 6, fontSize: 9 }}>
-                    {fsPct >= 80 ? '— peu spéculatif'
-                      : fsPct >= 40 ? '— mixte'
-                      : '— très spéculatif'}
+                    {fsPct >= 80 ? '— peu spéculatif' : fsPct >= 40 ? '— mixte' : '— très spéculatif'}
                   </span>
                 </div>
               )}
             </div>
           )}
 
-          {/* En-têtes heatmap */}
           <div style={{ display: 'flex', gap: 3, alignItems: 'center', marginBottom: 4 }}>
             <div style={{ width: 18, flexShrink: 0 }} />
             {Array(9).fill(0).map((_, i) => (
@@ -241,9 +224,23 @@ export default function ScreenerRow({ data, index }: { data: ContractData; index
             <div style={{ flex: 1.5, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1 }}>score</div>
           </div>
 
-          <HeatmapRow label="D" history={data.daily.history} live={data.daily.live} score={data.daily.score} />
+          <HeatmapRow
+            label="D"
+            historyT={dHistory}
+            liveT={dLive}
+            history={dHistory}
+            live={dLive}
+            score={dScore2}
+          />
           <div style={{ marginTop: 3 }}>
-            <HeatmapRow label="W" history={data.weekly.history} live={data.weekly.live} score={data.weekly.score} />
+            <HeatmapRow
+              label="W"
+              historyT={wHistory}
+              liveT={wLive}
+              history={wHistory}
+              live={wLive}
+              score={wScore2}
+            />
           </div>
         </div>
       )}
