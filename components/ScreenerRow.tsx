@@ -1,8 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import HeatmapRow from './HeatmapRow'
 import { rsiTextColor } from '@/lib/rsi'
+
+// Import dynamique pour éviter les conflits de types
+const HeatmapRow = require('./HeatmapRow').default as (props: {
+  label: string
+  historyT: (number | null)[]
+  liveT: number | null
+  history: (number | null)[]
+  live: number | null
+  score: number | null
+}) => JSX.Element
 
 interface RsiData {
   history: (number | null)[]
