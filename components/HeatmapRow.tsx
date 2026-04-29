@@ -1,266 +1,147 @@
 'use client'
+import { rsiColor } from '@/lib/rsi'
 
-import { useState } from 'react'
-import HeatmapRow from './HeatmapRow'
-import { rsiTextColor } from '@/lib/rsi'
-
-interface RsiData {
+interface HeatmapRowProps {
+  label: string
+  historyT: (number | null)[]
+  liveT: number | null
+  score: number | null
   history: (number | null)[]
   live: number | null
-  score: number | null
-  count: number
-  incomplete: boolean
 }
 
-export interface ContractData {
-  symbol: string
-  daily: RsiData
-  weekly: RsiData
-  vol24h: number
-  volSpot: number | null
-  spotRatio: number | null    // % volume spot / (spot + futures)
-  ratioFS: number | null      // futures / spot
-  spotRatioPct: number | null // percentile rank (0-100) — calculé dans page.tsx
-  ratioFSPct: number | null   // percentile rank inversé (0-100) — calculé dans page.tsx
-  incomplete: boolean
-  loading?: boolean
-  error?: boolean
+function rsiRGB(v: number): [number, number, number] {
+  if (v >= 90) return [5,88,5]
+  if (v >= 85) return [6,96,6]
+  if (v >= 80) return [14,104,14]
+  if (v >= 75) return [22,116,22]
+  if (v >= 70) return [32,124,32]
+  if (v >= 65) return [44,130,44]
+  if (v >= 60) return [64,128,64]
+  if (v >= 55) return [80,110,80]
+  if (v >= 50) return [96,96,96]
+  if (v >= 45) return [110,80,80]
+  if (v >= 40) return [128,64,64]
+  if (v >= 35) return [130,44,44]
+  if (v >= 30) return [124,32,32]
+  if (v >= 25) return [116,22,22]
+  if (v >= 20) return [104,14,14]
+  if (v >= 15) return [96,8,8]
+  if (v >= 10) return [88,5,5]
+  return [80,0,0]
 }
 
-function formatVol(v: number): string {
-  if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B'
-  if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M'
-  if (v >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'K'
-  return '$' + v.toFixed(0)
+function rsiText(v: number): string {
+  if (v >= 50) return `rgb(${Math.round(140 + v * 0.5)},255,${Math.round(140 + v * 0.5)})`
+  return `rgb(255,${Math.round(120 + v * 0.7)},${Math.round(120 + v * 0.7)})`
 }
 
-// Couleur basée sur le percentile (0-100)
-// 80-100 = top 20% = vert
-// 20-79  = milieu 60% = jaune
-// 0-19   = bas 20% = rouge
-function percentileColor(pct: number): string {
-  if (pct >= 80) return '#00e676'
-  if (pct >= 60) return '#69f0ae'
-  if (pct >= 40) return '#fff176'
-  if (pct >= 20) return '#ffb74d'
-  return '#ef5350'
-}
-
-function PercentileBar({ pct, color }: { pct: number; color: string }) {
+function BarCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: number | null }) {
+  if (valueT === null || valueRaw === null) {
+    return (
+      <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
+        display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+        <span style={{ fontSize:13, fontWeight:600, color:'#1a4028', fontFamily:'Space Mono, monospace' }}>—</span>
+        <div style={{ width:'80%', height:3, borderRadius:2, background:'#071409' }} />
+      </div>
+    )
+  }
+  const [r,g,b] = rsiRGB(valueRaw)
+  const pct = Math.min(Math.round(valueRaw), 100)
+  const textC = rsiText(valueRaw)
   return (
-    <div style={{
-      width: '100%', height: 2,
-      background: 'rgba(128,128,128,0.15)',
-      borderRadius: 1, overflow: 'hidden', marginTop: 3,
-    }}>
-      <div style={{
-        height: '100%', width: `${pct}%`,
-        background: color, borderRadius: 1,
-        transition: 'width 0.5s ease',
-      }} />
+    <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
+      display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+      <span style={{ fontSize:13, fontWeight:600, color:textC,
+        fontFamily:'Space Mono, monospace', lineHeight:1 }}>
+        {valueT.toFixed(1)}
+      </span>
+      <div style={{ width:'80%', height:3, borderRadius:2,
+        background:`rgba(${r},${g},${b},0.2)` }}>
+        <div style={{ width:`${pct}%`, height:'100%', borderRadius:2,
+          background:`rgb(${r},${g},${b})` }} />
+      </div>
     </div>
   )
 }
 
-export default function ScreenerRow({ data, index }: { data: ContractData; index: number }) {
-  const [open, setOpen] = useState(false)
-  const base = data.symbol.replace('USDT', '')
+function LiveCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: number | null }) {
+  if (valueT === null || valueRaw === null) {
+    return (
+      <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
+        display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+        border:'1px solid #0a2010', borderRadius:6 }}>
+        <span style={{ fontSize:13, fontWeight:600, color:'#1a4028', fontFamily:'Space Mono, monospace' }}>—</span>
+        <div style={{ width:'80%', height:3, borderRadius:2, background:'#071409' }} />
+      </div>
+    )
+  }
+  const [r,g,b] = rsiRGB(valueRaw)
+  const pct = Math.min(Math.round(valueRaw), 100)
+  const textC = rsiText(valueRaw)
+  return (
+    <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
+      display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+      border:`1px solid rgba(${r},${g},${b},0.5)`, borderRadius:6,
+      background:`rgba(${r},${g},${b},0.06)` }}>
+      <span style={{ fontSize:13, fontWeight:700, color:textC,
+        fontFamily:'Space Mono, monospace', lineHeight:1 }}>
+        {valueT.toFixed(1)}
+      </span>
+      <div style={{ width:'80%', height:3, borderRadius:2,
+        background:`rgba(${r},${g},${b},0.2)` }}>
+        <div style={{ width:`${pct}%`, height:'100%', borderRadius:2,
+          background:`rgb(${r},${g},${b})` }} />
+      </div>
+    </div>
+  )
+}
 
-  const dScore      = data.daily?.score
-  const wScore      = data.weekly?.score
-  const spotRatio   = data.spotRatio
-  const ratioFS     = data.ratioFS
-  const srPct       = data.spotRatioPct
-  const fsPct       = data.ratioFSPct
+function ScoreCell({ score }: { score: number | null }) {
+  if (score === null) {
+    return (
+      <div style={{ flex:1.5, textAlign:'center', padding:'4px 4px 3px',
+        display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+        <span style={{ fontSize:13, fontWeight:600, color:'#1a4028', fontFamily:'Space Mono, monospace' }}>—</span>
+        <div style={{ width:'80%', height:3, borderRadius:2, background:'#071409' }} />
+      </div>
+    )
+  }
+  const [r,g,b] = rsiRGB(score)
+  const pct = Math.min(Math.round(score), 100)
+  const textC = rsiText(score)
+  return (
+    <div style={{ flex:1.5, textAlign:'center', padding:'4px 4px 3px',
+      display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+      <span style={{ fontSize:13, fontWeight:700, color:textC,
+        fontFamily:'Space Mono, monospace', lineHeight:1 }}>
+        {score.toFixed(1)}%
+      </span>
+      <div style={{ width:'80%', height:3, borderRadius:2,
+        background:`rgba(${r},${g},${b},0.2)` }}>
+        <div style={{ width:`${pct}%`, height:'100%', borderRadius:2,
+          background:`rgb(${r},${g},${b})` }} />
+      </div>
+    </div>
+  )
+}
+
+export default function HeatmapRow({ label, historyT, liveT, score, history, live }: HeatmapRowProps) {
+  const hist9T   = historyT.length < 9 ? [...Array(9 - historyT.length).fill(null), ...historyT] : historyT.slice(-9)
+  const hist9Raw = history.length  < 9 ? [...Array(9 - history.length).fill(null),  ...history]  : history.slice(-9)
 
   return (
-    <div
-      className="row-animate"
-      style={{
-        borderBottom: '1px solid #0a0f1e',
-        animationDelay: `${Math.min(index * 20, 400)}ms`,
-      }}
-    >
-      {/* Ligne principale */}
-      <div
-        onClick={() => !data.loading && setOpen(o => !o)}
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr',
-          padding: '10px 24px',
-          cursor: data.loading ? 'default' : 'pointer',
-          background: open ? 'var(--bg-row-hover)' : 'transparent',
-          borderBottom: open ? '1px solid var(--border)' : 'none',
-          transition: 'background 0.15s',
-          alignItems: 'center',
-        }}
-        onMouseEnter={e => { if (!open) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-row-hover)' }}
-        onMouseLeave={e => { if (!open) (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
-      >
-        {/* Contrat */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{
-            fontSize: 8,
-            color: open ? 'var(--accent-dim)' : 'var(--text-dim)',
-            transition: 'transform 0.2s, color 0.2s',
-            display: 'inline-block',
-            transform: open ? 'rotate(90deg)' : 'none',
-          }}>▶</span>
-          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', letterSpacing: 0.5 }}>
-            {base}
-          </span>
-          <span style={{ fontSize: 10, fontWeight: 300, color: 'var(--text-muted)', letterSpacing: 2, textTransform: 'lowercase' }}>
-            /usdt
-          </span>
-          {data.incomplete && (
-            <span style={{
-              fontSize: 9, background: 'var(--warn-bg)', color: 'var(--warn)',
-              border: '1px solid var(--warn-border)', padding: '2px 6px',
-              borderRadius: 4, letterSpacing: 1, fontWeight: 400,
-            }}>missing data</span>
-          )}
-        </div>
+    <div style={{ display:'flex', gap:3, alignItems:'stretch' }}>
+      <div style={{ width:18, textAlign:'center', fontSize:11, fontWeight:600,
+        color:'var(--text-muted)', flexShrink:0, display:'flex', alignItems:'center',
+        justifyContent:'center', letterSpacing:1 }}>{label}</div>
 
-        {/* RSI Daily */}
-        <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 400 }}>
-          {data.loading ? (
-            <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
-          ) : dScore !== null && dScore !== undefined ? (
-            <span style={{ color: rsiTextColor(dScore) }}>{dScore.toFixed(1)}%</span>
-          ) : (
-            <span style={{ color: 'var(--text-dim)' }}>—</span>
-          )}
-        </div>
+      {hist9T.map((vT, i) => <BarCell key={i} valueT={vT} valueRaw={hist9Raw[i]} />)}
 
-        {/* RSI Weekly */}
-        <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 400 }}>
-          {data.loading ? (
-            <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
-          ) : wScore !== null && wScore !== undefined ? (
-            <span style={{ color: rsiTextColor(wScore) }}>{wScore.toFixed(1)}%</span>
-          ) : (
-            <span style={{ color: 'var(--text-dim)' }}>—</span>
-          )}
-        </div>
+      <div style={{ width:1, background:'#0a2010', flexShrink:0, margin:'0 2px', alignSelf:'stretch' }} />
 
-        {/* Vol 24H */}
-        <div style={{ textAlign: 'right', fontSize: 12, fontWeight: 400, color: 'var(--text-muted)' }}>
-          {data.loading ? (
-            <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
-          ) : formatVol(data.vol24h || 0)}
-        </div>
-
-        {/* Spot Ratio */}
-        <div style={{ textAlign: 'right', paddingRight: 4 }}>
-          {data.loading ? (
-            <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
-          ) : spotRatio !== null && srPct !== null ? (
-            <div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: percentileColor(srPct) }}>
-                {spotRatio.toFixed(1)}%
-              </span>
-              <PercentileBar pct={srPct} color={percentileColor(srPct)} />
-            </div>
-          ) : (
-            <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>—</span>
-          )}
-        </div>
-
-        {/* Ratio F/S */}
-        <div style={{ textAlign: 'right', paddingRight: 4 }}>
-          {data.loading ? (
-            <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
-          ) : ratioFS !== null && fsPct !== null ? (
-            <div>
-              <span style={{ fontSize: 12, fontWeight: 600, color: percentileColor(fsPct) }}>
-                {ratioFS >= 100 ? ratioFS.toFixed(0) : ratioFS >= 10 ? ratioFS.toFixed(1) : ratioFS.toFixed(2)}x
-              </span>
-              <PercentileBar pct={fsPct} color={percentileColor(fsPct)} />
-            </div>
-          ) : (
-            <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>—</span>
-          )}
-        </div>
-      </div>
-
-      {/* Panneau heatmap */}
-      {open && !data.loading && (
-        <div
-          className="heatmap-animate"
-          style={{ padding: '14px 24px 18px', background: 'var(--bg-heatmap)' }}
-        >
-          <div style={{
-            fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3,
-            textTransform: 'uppercase', marginBottom: 10, fontWeight: 400,
-          }}>
-            {base} / usdt — rsi heatmap
-          </div>
-
-          {/* Résumé Spot Ratio + Ratio F/S */}
-          {(spotRatio !== null || ratioFS !== null) && (
-            <div style={{ display: 'flex', gap: 24, marginBottom: 14, flexWrap: 'wrap' }}>
-              {spotRatio !== null && srPct !== null && (
-                <div style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: 1 }}>
-                  spot ratio{' '}
-                  <span style={{ color: percentileColor(srPct), fontWeight: 600 }}>
-                    {spotRatio.toFixed(1)}%
-                  </span>
-                  <span style={{ color: 'var(--text-dim)', marginLeft: 6, fontSize: 9 }}>
-                    {srPct >= 80 ? '— demande réelle forte'
-                      : srPct >= 40 ? '— mixte'
-                      : '— dominante spéculative'}
-                  </span>
-                </div>
-              )}
-              {ratioFS !== null && fsPct !== null && (
-                <div style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: 1 }}>
-                  ratio f/s{' '}
-                  <span style={{ color: percentileColor(fsPct), fontWeight: 600 }}>
-                    {ratioFS >= 10 ? ratioFS.toFixed(1) : ratioFS.toFixed(2)}x
-                  </span>
-                  <span style={{ color: 'var(--text-dim)', marginLeft: 6, fontSize: 9 }}>
-                    {fsPct >= 80 ? '— peu spéculatif'
-                      : fsPct >= 40 ? '— mixte'
-                      : '— très spéculatif'}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* En-têtes heatmap */}
-          <div style={{ display: 'flex', gap: 3, alignItems: 'center', marginBottom: 4 }}>
-            <div style={{ width: 18, flexShrink: 0 }} />
-            {Array(9).fill(0).map((_, i) => (
-              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--text-dim)', letterSpacing: 1 }}>
-                J-{9 - i}
-              </div>
-            ))}
-            <div style={{ width: 1, margin: '0 2px', flexShrink: 0, opacity: 0 }} />
-            <div style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1 }}>now</div>
-            <div style={{ flex: 1.5, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1 }}>score</div>
-          </div>
-
-          <HeatmapRow
-            label="D"
-            historyT={data.daily.history}
-            liveT={data.daily.live}
-            history={data.daily.history}
-            live={data.daily.live}
-            score={data.daily.score}
-          />
-          <div style={{ marginTop: 3 }}>
-            <HeatmapRow
-              label="W"
-              historyT={data.weekly.history}
-              liveT={data.weekly.live}
-              history={data.weekly.history}
-              live={data.weekly.live}
-              score={data.weekly.score}
-            />
-          </div>
-        </div>
-      )}
+      <LiveCell valueT={liveT} valueRaw={live} />
+      <ScoreCell score={score} />
     </div>
   )
 }
