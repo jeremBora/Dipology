@@ -263,4 +263,5 @@ export default function ScreenerRow({ data, index }: { data: ContractData; index
       )}
     </div>
   )
-}export default HeatmapRow
+}
+export default HeatmapRow
