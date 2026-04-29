@@ -40,9 +40,100 @@ async function fetchSpotVol(symbol: string): Promise<number | null> {
   } catch { return null }
 }
 
+// ── USDT Dominance via CoinGecko ─────────────────────────────────────────────
+// Calculates USDT.D = USDT market cap / total crypto market cap
+// Returns daily closes of dominance percentage over 90 days
+async function fetchUsdtDominanceCloses(): Promise<{ daily: number[]; weekly: number[] }> {
+  try {
+    // Fetch USDT market cap history (90 days = daily data)
+    const [usdtRes, globalRes] = await Promise.all([
+      fetch('https://api.coingecko.com/api/v3/coins/tether/market_chart?vs_currency=usd&days=90&interval=daily', {
+        next: { revalidate: 3600 }
+      }),
+      fetch('https://api.coingecko.com/api/v3/global', {
+        next: { revalidate: 3600 }
+      })
+    ])
+
+    if (!usdtRes.ok || !globalRes.ok) throw new Error('CoinGecko error')
+
+    const usdtData = await usdtRes.json()
+    const globalData = await globalRes.json()
+
+    // Get total market cap history (also 90 days)
+    const totalRes = await fetch(
+      'https://api.coingecko.com/api/v3/global/market_cap_chart?days=90',
+      { next: { revalidate: 3600 } }
+    )
+
+    let dominanceCloses: number[] = []
+
+    if (totalRes.ok) {
+      const totalData = await totalRes.json()
+      const usdtMcaps: [number, number][] = usdtData.market_caps || []
+      const totalMcaps: [number, number][] = totalData.market_cap_chart?.market_cap || []
+
+      // Align by index (both should be same length ~90)
+      const minLen = Math.min(usdtMcaps.length, totalMcaps.length)
+      for (let i = 0; i < minLen; i++) {
+        const usdtMc = usdtMcaps[i][1]
+        const totalMc = totalMcaps[i][1]
+        if (totalMc > 0) {
+          dominanceCloses.push((usdtMc / totalMc) * 100)
+        }
+      }
+    } else {
+      // Fallback: use CoinGecko global dominance for current + estimate history from USDT mcap trend
+      const currentDominance = globalData.data?.market_cap_percentage?.usdt || 5
+      const usdtMcaps: [number, number][] = usdtData.market_caps || []
+      // Approximate dominance using ratio to current known value
+      const currentUsdtMc = usdtMcaps[usdtMcaps.length - 1]?.[1] || 1
+      dominanceCloses = usdtMcaps.map(([, mc]) => (mc / currentUsdtMc) * currentDominance)
+    }
+
+    // Build weekly from daily (take every 7th point)
+    const weeklyCloses: number[] = []
+    for (let i = 0; i < dominanceCloses.length; i += 7) {
+      weeklyCloses.push(dominanceCloses[i])
+    }
+    // Add last value as "live"
+    if (dominanceCloses.length > 0) {
+      weeklyCloses.push(dominanceCloses[dominanceCloses.length - 1])
+    }
+
+    return { daily: dominanceCloses, weekly: weeklyCloses }
+  } catch {
+    return { daily: [], weekly: [] }
+  }
+}
+
 export async function GET(req: NextRequest) {
   const symbol = req.nextUrl.searchParams.get('symbol')
   if (!symbol) return Response.json({ error: 'symbol required' }, { status: 400 })
+
+  // Special case: USDT Dominance
+  if (symbol === 'USDT.D') {
+    try {
+      const { daily, weekly } = await fetchUsdtDominanceCloses()
+      const rsiD = computeRsi(daily, 14, MIN_BARS.D)
+      const rsiW = computeRsi(weekly, 14, MIN_BARS.W)
+      return Response.json({
+        symbol: 'USDT.D',
+        daily: rsiD,
+        weekly: rsiW,
+        vol24h: 0,
+        volSpot: null,
+        spotRatio: null,
+        ratioFS: null,
+        spotRatioPct: null,
+        ratioFSPct: null,
+        incomplete: rsiD.incomplete || rsiW.incomplete,
+        isSpecial: true,
+      })
+    } catch (err) {
+      return Response.json({ error: String(err) }, { status: 500 })
+    }
+  }
 
   try {
     const [dailyCloses, weeklyCloses, volFutures, volSpot] = await Promise.all([
@@ -56,12 +147,10 @@ export async function GET(req: NextRequest) {
     const rsiW = computeRsi(weeklyCloses, 14, MIN_BARS.W)
     const incomplete = rsiD.incomplete || rsiW.incomplete
 
-    // Spot Ratio = volSpot / (volSpot + volFutures) * 100
     const spotRatio = (volSpot !== null && volSpot > 0 && volFutures > 0)
       ? (volSpot / (volSpot + volFutures)) * 100
       : null
 
-    // Ratio F/S = volFutures / volSpot
     const ratioFS = (volSpot !== null && volSpot > 0 && volFutures > 0)
       ? volFutures / volSpot
       : null
@@ -74,6 +163,8 @@ export async function GET(req: NextRequest) {
       volSpot,
       spotRatio,
       ratioFS,
+      spotRatioPct: null,
+      ratioFSPct:   null,
       incomplete,
     })
   } catch (err) {

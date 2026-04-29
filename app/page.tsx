@@ -11,6 +11,8 @@ type SortDir = 'asc' | 'desc'
 const BATCH_SIZE = 20
 const REFRESH_MS = 30000
 
+const PINNED_SYMBOLS = ['BTCUSDT', 'USDT.D']
+
 function percentileRank(values: number[], val: number): number {
   const sorted = [...values].sort((a, b) => a - b)
   const idx = sorted.findIndex(v => v >= val)
@@ -19,47 +21,50 @@ function percentileRank(values: number[], val: number): number {
 }
 
 export default function Home() {
-  const [contracts, setContracts]       = useState<Map<string, ContractData>>(new Map())
-  const [symbols, setSymbols]           = useState<string[]>([])
-  const [totalSymbols, setTotalSymbols] = useState(0)
-  const [sortKey, setSortKey]           = useState<SortKey>('momentumD')
-  const [sortDir, setSortDir]           = useState<SortDir>('desc')
-  const [loadedCount, setLoadedCount]   = useState(0)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [extraCols, setExtraCols]       = useState<Set<ExtraCol>>(new Set())
-  const [filters, setFilters]           = useState<Filters>(defaultFilters)
-  const [theme, setTheme]               = useState<'dark' | 'light'>('dark')
-  const refreshTimer                    = useRef<ReturnType<typeof setInterval> | null>(null)
-  const abortRef                        = useRef<AbortController | null>(null)
+  const [contracts, setContracts]         = useState<Map<string, ContractData>>(new Map())
+  const [symbols, setSymbols]             = useState<string[]>([])
+  const [totalSymbols, setTotalSymbols]   = useState(0)
+  const [sortKey, setSortKey]             = useState<SortKey>('momentumD')
+  const [sortDir, setSortDir]             = useState<SortDir>('desc')
+  const [loadedCount, setLoadedCount]     = useState(0)
+  const [isRefreshing, setIsRefreshing]   = useState(false)
+  const [extraCols, setExtraCols]         = useState<Set<ExtraCol>>(new Set())
+  const [filters, setFilters]             = useState<Filters>(defaultFilters)
+  const [theme, setTheme]                 = useState<'dark' | 'light'>('dark')
+  const [pushMissingToBottom, setPushMissingToBottom] = useState(false)
+  const refreshTimer                      = useRef<ReturnType<typeof setInterval> | null>(null)
+  const abortRef                          = useRef<AbortController | null>(null)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 
+  const makeEmpty = (sym: string): ContractData => ({
+    symbol: sym,
+    daily:   { history: [], live: null, score: null, count: 0, incomplete: false },
+    weekly:  { history: [], live: null, score: null, count: 0, incomplete: false },
+    vol24h: 0, volSpot: null,
+    spotRatio: null, ratioFS: null,
+    spotRatioPct: null, ratioFSPct: null,
+    incomplete: false, loading: true,
+  })
+
   useEffect(() => {
     fetch('/api/symbols')
       .then(r => r.json())
       .then(data => {
-        setSymbols(data.symbols)
-        setTotalSymbols(data.total)
+        // Add USDT.D to the list
+        const allSymbols = ['USDT.D', ...data.symbols]
+        setSymbols(allSymbols)
+        setTotalSymbols(allSymbols.length)
         const init = new Map<string, ContractData>()
-        data.symbols.forEach((sym: string) => {
-          init.set(sym, {
-            symbol: sym,
-            daily:   { history: [], live: null, score: null, count: 0, incomplete: false },
-            weekly:  { history: [], live: null, score: null, count: 0, incomplete: false },
-            vol24h: 0, volSpot: null,
-            spotRatio: null, ratioFS: null,
-            spotRatioPct: null, ratioFSPct: null,
-            incomplete: false, loading: true,
-          })
-        })
+        allSymbols.forEach((sym: string) => { init.set(sym, makeEmpty(sym)) })
         setContracts(init)
       })
   }, [])
 
   const recalcPercentiles = useCallback((map: Map<string, ContractData>) => {
-    const all = Array.from(map.values())
+    const all = Array.from(map.values()).filter(c => !c.loading)
     const srVals = all.map(c => c.spotRatio).filter((v): v is number => v !== null)
     const fsVals = all.map(c => c.ratioFS).filter((v): v is number => v !== null)
     const updated = new Map(map)
@@ -81,7 +86,7 @@ export default function Home() {
       await Promise.allSettled(
         batch.map(async sym => {
           try {
-            const res = await fetch(`/api/rsi?symbol=${sym}`, { signal })
+            const res = await fetch(`/api/rsi?symbol=${encodeURIComponent(sym)}`, { signal })
             if (!res.ok) return
             const data = await res.json()
             setContracts(prev => {
@@ -129,56 +134,76 @@ export default function Home() {
     else { setSortKey(key); setSortDir(key === 'symbol' ? 'asc' : 'desc') }
   }
 
-  function applyFilters(c: ContractData): boolean {
-    const md = c.daily?.live !== null ? (c.daily.live ?? 0) / 10 : null
-    const mw = c.weekly?.live !== null ? (c.weekly.live ?? 0) / 10 : null
-    const mdPrev = c.daily?.history?.slice(-1)[0]
-    const mwPrev = c.weekly?.history?.slice(-1)[0]
-    const sd = c.daily?.score !== null ? c.daily.score : null
-    const sw = c.weekly?.score !== null ? c.weekly.score : null
+  function applyFiltersCheck(c: ContractData): boolean {
+    const dLive = c.daily?.live
+    const wLive = c.weekly?.live
+    const dHist = c.daily?.history ?? []
+    const wHist = c.weekly?.history ?? []
+    const dPrev = dHist.length > 0 ? dHist[dHist.length - 1] : null
+    const wPrev = wHist.length > 0 ? wHist[wHist.length - 1] : null
+    const dScore = c.daily?.score
+    const wScore = c.weekly?.score
 
-    if (filters.momentumDLive !== '' && md !== null && md < parseFloat(filters.momentumDLive)) return false
-    if (filters.momentumDPrev !== '' && mdPrev !== null && mdPrev !== undefined && (mdPrev/10) < parseFloat(filters.momentumDPrev)) return false
-    if (filters.momentumWLive !== '' && mw !== null && mw < parseFloat(filters.momentumWLive)) return false
-    if (filters.momentumWPrev !== '' && mwPrev !== null && mwPrev !== undefined && (mwPrev/10) < parseFloat(filters.momentumWPrev)) return false
-    if (filters.scorePctD !== '' && sd !== null && sd < parseFloat(filters.scorePctD)) return false
-    if (filters.scorePctW !== '' && sw !== null && sw < parseFloat(filters.scorePctW)) return false
+    const md     = dLive !== null && dLive !== undefined ? dLive / 10 : null
+    const mw     = wLive !== null && wLive !== undefined ? wLive / 10 : null
+    const mdPrev = dPrev !== null && dPrev !== undefined ? dPrev / 10 : null
+    const mwPrev = wPrev !== null && wPrev !== undefined ? wPrev / 10 : null
+
+    if (filters.momentumDLive !== '' && (md === null || md < parseFloat(filters.momentumDLive))) return false
+    if (filters.momentumDPrev !== '' && (mdPrev === null || mdPrev < parseFloat(filters.momentumDPrev))) return false
+    if (filters.momentumWLive !== '' && (mw === null || mw < parseFloat(filters.momentumWLive))) return false
+    if (filters.momentumWPrev !== '' && (mwPrev === null || mwPrev < parseFloat(filters.momentumWPrev))) return false
+    if (filters.scorePctD !== '' && (dScore === null || dScore === undefined || dScore < parseFloat(filters.scorePctD))) return false
+    if (filters.scorePctW !== '' && (wScore === null || wScore === undefined || wScore < parseFloat(filters.scorePctW))) return false
     if (!applyVolFilter(c.vol24h ?? 0, filters.vol24hMin)) return false
     return true
   }
 
-  function getSortedRows(): ContractData[] {
-    const filtered = Array.from(contracts.values()).filter(c => !c.loading && applyFilters(c))
-    return filtered.sort((a, b) => {
-      if (sortKey !== 'symbol') {
-        if (a.incomplete && !b.incomplete) return 1
-        if (!a.incomplete && b.incomplete) return -1
-      }
-      let va: number | string = 0, vb: number | string = 0
-      if (sortKey === 'symbol')    { va = a.symbol;                vb = b.symbol }
-      if (sortKey === 'momentumD') { va = a.daily?.score  ?? -1;   vb = b.daily?.score  ?? -1 }
-      if (sortKey === 'momentumW') { va = a.weekly?.score ?? -1;   vb = b.weekly?.score ?? -1 }
-      if (sortKey === 'vol24h')    { va = a.vol24h ?? 0;           vb = b.vol24h ?? 0 }
-      if (sortKey === 'spotRatio') { va = a.spotRatio ?? -1;       vb = b.spotRatio ?? -1 }
-      if (sortKey === 'ratioFS')   { va = a.ratioFS ?? 999999;     vb = b.ratioFS ?? 999999 }
-      if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb as string) : (vb as string).localeCompare(va)
-      return sortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number)
-    })
+  function getSortedRows(): { pinned: ContractData[]; normal: ContractData[] } {
+    const all = Array.from(contracts.values()).filter(c => !c.loading)
+
+    // Separate pinned
+    const pinned = PINNED_SYMBOLS
+      .map(sym => contracts.get(sym))
+      .filter((c): c is ContractData => !!c)
+
+    // Normal rows (exclude pinned, apply filters)
+    const normal = all
+      .filter(c => !PINNED_SYMBOLS.includes(c.symbol) && applyFiltersCheck(c))
+      .sort((a, b) => {
+        // Push missing to bottom if toggle is on
+        if (pushMissingToBottom) {
+          if (a.incomplete && !b.incomplete) return 1
+          if (!a.incomplete && b.incomplete) return -1
+        }
+        let va: number | string = 0, vb: number | string = 0
+        if (sortKey === 'symbol')    { va = a.symbol;              vb = b.symbol }
+        if (sortKey === 'momentumD') { va = a.daily?.score  ?? -1; vb = b.daily?.score  ?? -1 }
+        if (sortKey === 'momentumW') { va = a.weekly?.score ?? -1; vb = b.weekly?.score ?? -1 }
+        if (sortKey === 'vol24h')    { va = a.vol24h ?? 0;         vb = b.vol24h ?? 0 }
+        if (sortKey === 'spotRatio') { va = a.spotRatio ?? -1;     vb = b.spotRatio ?? -1 }
+        if (sortKey === 'ratioFS')   { va = a.ratioFS ?? 999999;   vb = b.ratioFS ?? 999999 }
+        if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb as string) : (vb as string).localeCompare(va)
+        return sortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number)
+      })
+
+    return { pinned, normal }
   }
 
-  const sorted    = getSortedRows()
-  const pct       = totalSymbols > 0 ? Math.round((loadedCount / totalSymbols) * 100) : 0
+  const { pinned, normal } = getSortedRows()
   const allLoaded = loadedCount >= totalSymbols && totalSymbols > 0
+  const pct = totalSymbols > 0 ? Math.round((loadedCount / totalSymbols) * 100) : 0
 
-  // Grid columns based on active extra cols
-  const showSpotRatio = extraCols.has('spotRatio' as ExtraCol)
-  const showRatioFS   = extraCols.has('ratioFS' as ExtraCol)
   const showMomDPrev  = extraCols.has('momentumDPrev')
   const showMomWPrev  = extraCols.has('momentumWPrev')
   const showScoreD    = extraCols.has('scorePctD')
   const showScoreW    = extraCols.has('scorePctW')
+  const showSpotRatio = extraCols.has('spotRatio' as ExtraCol)
+  const showRatioFS   = extraCols.has('ratioFS' as ExtraCol)
+  const showVolSpot   = extraCols.has('volSpot' as ExtraCol)
 
-  const colCount = 4 + (showMomDPrev?1:0) + (showMomWPrev?1:0) + (showScoreD?1:0) + (showScoreW?1:0) + (showSpotRatio?1:0) + (showRatioFS?1:0)
+  const extraCount = (showMomDPrev?1:0)+(showMomWPrev?1:0)+(showScoreD?1:0)+(showScoreW?1:0)+(showSpotRatio?1:0)+(showRatioFS?1:0)+(showVolSpot?1:0)
+  const colCount = 4 + extraCount
   const gridCols = `2fr repeat(${colCount - 1}, 1fr)`
 
   function ColBtn({ col, label, align }: { col: SortKey; label: string; align?: string }) {
@@ -188,8 +213,7 @@ export default function Home() {
         background: 'none', border: 'none',
         color: active ? 'var(--accent)' : 'var(--text-dim)',
         fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
-        fontFamily: 'Syne, sans-serif', fontWeight: 500,
-        cursor: 'pointer',
+        fontFamily: 'Syne, sans-serif', fontWeight: 500, cursor: 'pointer',
         display: 'flex', alignItems: 'center',
         justifyContent: align === 'left' ? 'flex-start' : 'center',
         gap: 4, padding: '10px 12px', width: '100%',
@@ -208,7 +232,7 @@ export default function Home() {
         {label}
         {col === 'symbol' && (
           <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 10, marginLeft: 4 }}>
-            — {totalSymbols > 0 ? totalSymbols : '…'}
+            — {totalSymbols > 0 ? totalSymbols - 1 : '…'}
           </span>
         )}
         {active && <span style={{ fontSize: 9 }}>{sortDir === 'asc' ? '▲' : '▼'}</span>}
@@ -216,50 +240,31 @@ export default function Home() {
     )
   }
 
-  function SimpleColHeader({ label }: { label: string }) {
+  function SimpleHdr({ label }: { label: string }) {
     return (
-      <div style={{
-        color: 'var(--text-dim)', fontSize: 10, letterSpacing: 2,
-        textTransform: 'uppercase', fontFamily: 'Syne, sans-serif',
-        fontWeight: 500, padding: '10px 12px', textAlign: 'center',
-      }}>{label}</div>
+      <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'Syne, sans-serif', fontWeight: 500, padding: '10px 12px', textAlign: 'center' }}>
+        {label}
+      </div>
     )
   }
+
+  const headerBg = theme === 'dark' ? '#060910' : '#f0faf4'
 
   return (
     <main style={{ position: 'relative', zIndex: 1, padding: '24px 16px', maxWidth: 1400, margin: '0 auto' }}>
 
       <div style={{ textAlign: 'center', padding: '28px 0 24px', position: 'relative' }}>
-        {/* Bouton thème */}
         <button
           onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-          title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
-          style={{
-            position: 'absolute', top: 28, right: 0,
-            background: 'var(--bg-panel)', border: '1px solid var(--border)',
-            color: 'var(--text-muted)', borderRadius: 8,
-            padding: '6px 14px', cursor: 'pointer', fontSize: 15,
-            transition: 'all 0.2s',
-          }}
+          style={{ position: 'absolute', top: 28, right: 0, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 15, transition: 'all 0.2s' }}
           onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)'}
           onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'}
         >
           {theme === 'dark' ? '☀️' : '🌙'}
         </button>
-
-        <h1 style={{
-          fontSize: 28, fontWeight: 200, color: 'var(--accent)',
-          letterSpacing: 10, textTransform: 'uppercase', fontFamily: 'Syne, sans-serif',
-        }}>Dipology Capital</h1>
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6,
-          fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3,
-          textTransform: 'lowercase', fontWeight: 300,
-        }}>
-          <span style={{
-            width: 5, height: 5, borderRadius: '50%', background: 'var(--green-live)',
-            display: 'inline-block', animation: 'livePulse 1.8s infinite',
-          }} />
+        <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: 'Syne, sans-serif' }}>Dipology Capital</h1>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, textTransform: 'lowercase', fontWeight: 300 }}>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green-live)', display: 'inline-block', animation: 'livePulse 1.8s infinite' }} />
           live
         </div>
       </div>
@@ -276,60 +281,84 @@ export default function Home() {
       )}
 
       {isRefreshing && allLoaded && (
-        <div style={{ textAlign: 'right', fontSize: 10, color: 'var(--text-dim)', marginBottom: 8, letterSpacing: 1 }}>
-          ↻ mise à jour…
-        </div>
+        <div style={{ textAlign: 'right', fontSize: 10, color: 'var(--text-dim)', marginBottom: 8, letterSpacing: 1 }}>↻ mise à jour…</div>
       )}
 
-      {/* FilterBar */}
-      <FilterBar
-        filters={filters}
-        onChange={setFilters}
-        activeCount={sorted.length}
-        totalCount={Array.from(contracts.values()).filter(c => !c.loading).length}
-      />
+      <FilterBar filters={filters} onChange={setFilters} activeCount={normal.length} totalCount={normal.length + pinned.length} />
 
       <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+
         {/* Header */}
-        <div style={{
-          display: 'grid', gridTemplateColumns: gridCols,
-          background: theme === 'dark' ? '#060910' : '#f0faf4',
-          borderBottom: '1px solid var(--border)',
-        }}>
-          <ColBtn col="symbol"    label="Contrat" align="left" />
+        <div style={{ display: 'grid', gridTemplateColumns: gridCols, background: headerBg, borderBottom: '1px solid var(--border)' }}>
+          <ColBtn col="symbol"    label="Contrat"    align="left" />
           <ColBtn col="momentumD" label="Momentum D" />
           <ColBtn col="momentumW" label="Momentum W" />
           <ColBtn col="vol24h"    label="Vol 24H" />
-          {showMomDPrev && <SimpleColHeader label="Mom D-1" />}
-          {showMomWPrev && <SimpleColHeader label="Mom W-1" />}
-          {showScoreD   && <SimpleColHeader label="Score D" />}
-          {showScoreW   && <SimpleColHeader label="Score W" />}
+          {showMomDPrev  && <SimpleHdr label="Mom D-1" />}
+          {showMomWPrev  && <SimpleHdr label="Mom W-1" />}
+          {showScoreD    && <SimpleHdr label="Score D" />}
+          {showScoreW    && <SimpleHdr label="Score W" />}
           {showSpotRatio && <ColBtn col="spotRatio" label="Spot Ratio" />}
           {showRatioFS   && <ColBtn col="ratioFS"   label="Ratio F/S" />}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px' }}>
-            <ColumnPicker
-              active={extraCols}
-              onToggle={toggleExtraCol}
-            />
+          {showVolSpot   && <SimpleHdr label="Vol Spot" />}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '8px' }}>
+            {/* Toggle missing to bottom */}
+            <button
+              onClick={() => setPushMissingToBottom(p => !p)}
+              title={pushMissingToBottom ? 'Données manquantes : repoussées en bas' : 'Données manquantes : dans le classement normal'}
+              style={{
+                background: pushMissingToBottom ? 'rgba(255,159,67,0.15)' : 'none',
+                border: `1px solid ${pushMissingToBottom ? '#ff9f43' : 'var(--border)'}`,
+                color: pushMissingToBottom ? '#ff9f43' : 'var(--text-dim)',
+                borderRadius: 4, padding: '2px 7px', cursor: 'pointer',
+                fontSize: 10, fontFamily: 'Syne, sans-serif', letterSpacing: 1,
+                transition: 'all 0.2s',
+              }}
+            >↓?</button>
+            <ColumnPicker active={extraCols} onToggle={toggleExtraCol} />
           </div>
         </div>
 
-        <div>
-          {sorted.length === 0 && (
-            <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>
-              {allLoaded ? 'aucun résultat' : 'chargement des contrats…'}
-            </div>
-          )}
-          {sorted.map((row, i) => (
-            <ScreenerRow
-              key={row.symbol}
-              data={row}
-              index={i}
-              extraCols={extraCols}
-              gridCols={gridCols}
-            />
-          ))}
-        </div>
+        {/* Pinned rows - BTC + USDT.D always visible and expanded */}
+        {pinned.map((row, i) => (
+          <ScreenerRow
+            key={row.symbol}
+            data={row}
+            index={i}
+            extraCols={extraCols}
+            gridCols={gridCols}
+            forceOpen={true}
+            isPinned={true}
+          />
+        ))}
+
+        {/* Separator */}
+        {pinned.length > 0 && (
+          <div style={{ height: 2, background: 'var(--border)', opacity: 0.5 }} />
+        )}
+
+        {/* Normal rows */}
+        {normal.length === 0 && allLoaded && (
+          <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>
+            aucun résultat
+          </div>
+        )}
+        {!allLoaded && normal.length === 0 && (
+          <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>
+            chargement…
+          </div>
+        )}
+        {normal.map((row, i) => (
+          <ScreenerRow
+            key={row.symbol}
+            data={row}
+            index={i + pinned.length}
+            extraCols={extraCols}
+            gridCols={gridCols}
+            forceOpen={false}
+            isPinned={false}
+          />
+        ))}
       </div>
 
       <div style={{ textAlign: 'center', marginTop: 24, fontSize: 10, color: 'var(--text-dim)', letterSpacing: 2, fontWeight: 300 }}>

@@ -34,16 +34,16 @@ export interface ContractData {
   incomplete: boolean
   loading?: boolean
   error?: boolean
+  isSpecial?: boolean // for USDT.D
 }
 
 function formatVol(v: number): string {
   if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B'
   if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M'
   if (v >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'K'
-  return '$' + v.toFixed(0)
+  return v > 0 ? '$' + v.toFixed(0) : '—'
 }
 
-// Momentum = RSI / 10
 function fmtMom(v: number | null | undefined): string {
   if (v === null || v === undefined) return '—'
   return (v / 10).toFixed(2)
@@ -57,37 +57,39 @@ function percentileColor(pct: number): string {
   return '#ef5350'
 }
 
-function PercentileBar({ pct, color }: { pct: number; color: string }) {
-  return (
-    <div style={{ width: '100%', height: 2, background: 'rgba(128,128,128,0.15)', borderRadius: 1, overflow: 'hidden', marginTop: 3 }}>
-      <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 1, transition: 'width 0.5s ease' }} />
-    </div>
-  )
+// USDT.D sentiment label
+function usdtDLabel(momentum: number | null | undefined): { text: string; color: string } | null {
+  if (momentum === null || momentum === undefined) return null
+  const m = momentum / 10
+  if (m > 6) return { text: '⚠ Bear Market Signal', color: '#ef5350' }
+  if (m < 4) return { text: '✓ Bull Market Signal', color: '#00e676' }
+  return { text: '~ Neutre', color: '#fff176' }
 }
 
 export default function ScreenerRow({
-  data, index, extraCols, gridCols
+  data, index, extraCols, gridCols, forceOpen, isPinned
 }: {
   data: ContractData
   index: number
   extraCols: Set<ExtraCol>
   gridCols: string
+  forceOpen?: boolean
+  isPinned?: boolean
 }) {
   const [open, setOpen] = useState(false)
-  const base = data.symbol.replace('USDT', '')
+  const isOpen = forceOpen || open
+  const base = data.symbol === 'USDT.D' ? 'USDT.D' : data.symbol.replace('USDT', '')
 
-  const dLive    = data.daily?.live
-  const wLive    = data.weekly?.live
-  const dHist    = data.daily?.history ?? []
-  const wHist    = data.weekly?.history ?? []
-  const dPrev    = dHist.length > 0 ? dHist[dHist.length - 1] : null
-  const wPrev    = wHist.length > 0 ? wHist[wHist.length - 1] : null
-  const dScore   = data.daily?.score
-  const wScore   = data.weekly?.score
-  const spotRatio = data.spotRatio
-  const ratioFS   = data.ratioFS
-  const srPct     = data.spotRatioPct
-  const fsPct     = data.ratioFSPct
+  const dLive   = data.daily?.live
+  const wLive   = data.weekly?.live
+  const dHist   = data.daily?.history ?? []
+  const wHist   = data.weekly?.history ?? []
+  const dPrev   = dHist.length > 0 ? dHist[dHist.length - 1] : null
+  const wPrev   = wHist.length > 0 ? wHist[wHist.length - 1] : null
+  const dScore  = data.daily?.score
+  const wScore  = data.weekly?.score
+  const srPct   = data.spotRatioPct
+  const fsPct   = data.ratioFSPct
 
   const showMomDPrev  = extraCols.has('momentumDPrev')
   const showMomWPrev  = extraCols.has('momentumWPrev')
@@ -95,30 +97,54 @@ export default function ScreenerRow({
   const showScoreW    = extraCols.has('scorePctW')
   const showSpotRatio = extraCols.has('spotRatio' as ExtraCol)
   const showRatioFS   = extraCols.has('ratioFS' as ExtraCol)
+  const showVolSpot   = extraCols.has('volSpot' as ExtraCol)
 
   const dim = { color: 'var(--text-dim)', fontSize: 11 }
+  const sentiment = data.symbol === 'USDT.D' ? usdtDLabel(dLive) : null
+
+  const rowBg = isPinned
+    ? (data.symbol === 'USDT.D' ? 'rgba(255,159,67,0.04)' : 'rgba(0,255,68,0.04)')
+    : 'transparent'
 
   return (
-    <div className="row-animate" style={{ borderBottom: '1px solid #0a0f1e', animationDelay: `${Math.min(index * 20, 400)}ms` }}>
+    <div
+      className={isPinned ? undefined : 'row-animate'}
+      style={{
+        borderBottom: '1px solid #0a0f1e',
+        ...(isPinned ? {} : { animationDelay: `${Math.min(index * 20, 400)}ms` }),
+      }}
+    >
       <div
-        onClick={() => !data.loading && setOpen(o => !o)}
+        onClick={() => !data.loading && !forceOpen && setOpen(o => !o)}
         style={{
           display: 'grid', gridTemplateColumns: gridCols,
           padding: '10px 24px',
-          cursor: data.loading ? 'default' : 'pointer',
-          background: open ? 'var(--bg-row-hover)' : 'transparent',
-          borderBottom: open ? '1px solid var(--border)' : 'none',
+          cursor: (data.loading || forceOpen) ? 'default' : 'pointer',
+          background: isOpen ? 'var(--bg-row-hover)' : rowBg,
+          borderBottom: isOpen ? '1px solid var(--border)' : 'none',
           transition: 'background 0.15s', alignItems: 'center',
         }}
-        onMouseEnter={e => { if (!open) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-row-hover)' }}
-        onMouseLeave={e => { if (!open) (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
+        onMouseEnter={e => { if (!isOpen && !forceOpen) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-row-hover)' }}
+        onMouseLeave={e => { if (!isOpen && !forceOpen) (e.currentTarget as HTMLDivElement).style.background = rowBg }}
       >
         {/* Contrat */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 8, color: open ? 'var(--accent-dim)' : 'var(--text-dim)', transition: 'transform 0.2s', display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none' }}>▶</span>
+          {!forceOpen && (
+            <span style={{ fontSize: 8, color: isOpen ? 'var(--accent-dim)' : 'var(--text-dim)', transition: 'transform 0.2s', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+          )}
+          {isPinned && (
+            <span style={{ fontSize: 9, color: data.symbol === 'USDT.D' ? '#ff9f43' : 'var(--accent)', letterSpacing: 1 }}>
+              {data.symbol === 'USDT.D' ? '◆' : '★'}
+            </span>
+          )}
           <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', letterSpacing: 0.5 }}>{base}</span>
-          <span style={{ fontSize: 10, fontWeight: 300, color: 'var(--text-muted)', letterSpacing: 2, textTransform: 'lowercase' }}>/usdt</span>
-          {data.incomplete && (
+          {data.symbol !== 'USDT.D' && (
+            <span style={{ fontSize: 10, fontWeight: 300, color: 'var(--text-muted)', letterSpacing: 2, textTransform: 'lowercase' }}>/usdt</span>
+          )}
+          {sentiment && (
+            <span style={{ fontSize: 9, color: sentiment.color, letterSpacing: 1, fontWeight: 600 }}>{sentiment.text}</span>
+          )}
+          {data.incomplete && !data.isSpecial && (
             <span style={{ fontSize: 9, background: 'var(--warn-bg)', color: 'var(--warn)', border: '1px solid var(--warn-border)', padding: '2px 6px', borderRadius: 4, letterSpacing: 1 }}>missing data</span>
           )}
         </div>
@@ -144,7 +170,6 @@ export default function ScreenerRow({
           {data.loading ? <span style={dim}>…</span> : formatVol(data.vol24h || 0)}
         </div>
 
-        {/* Momentum D-1 */}
         {showMomDPrev && (
           <div style={{ textAlign: 'right', fontSize: 12 }}>
             {data.loading ? <span style={dim}>…</span>
@@ -153,8 +178,6 @@ export default function ScreenerRow({
               : <span style={dim}>—</span>}
           </div>
         )}
-
-        {/* Momentum W-1 */}
         {showMomWPrev && (
           <div style={{ textAlign: 'right', fontSize: 12 }}>
             {data.loading ? <span style={dim}>…</span>
@@ -163,8 +186,6 @@ export default function ScreenerRow({
               : <span style={dim}>—</span>}
           </div>
         )}
-
-        {/* Score % D */}
         {showScoreD && (
           <div style={{ textAlign: 'right', fontSize: 12 }}>
             {data.loading ? <span style={dim}>…</span>
@@ -173,8 +194,6 @@ export default function ScreenerRow({
               : <span style={dim}>—</span>}
           </div>
         )}
-
-        {/* Score % W */}
         {showScoreW && (
           <div style={{ textAlign: 'right', fontSize: 12 }}>
             {data.loading ? <span style={dim}>…</span>
@@ -183,64 +202,44 @@ export default function ScreenerRow({
               : <span style={dim}>—</span>}
           </div>
         )}
-
-        {/* Spot Ratio */}
         {showSpotRatio && (
-          <div style={{ textAlign: 'right', paddingRight: 4 }}>
+          <div style={{ textAlign: 'right', fontSize: 12 }}>
             {data.loading ? <span style={dim}>…</span>
-              : spotRatio !== null && srPct !== null
-              ? <div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: percentileColor(srPct) }}>{spotRatio.toFixed(1)}%</span>
-                  <PercentileBar pct={srPct} color={percentileColor(srPct)} />
-                </div>
+              : data.spotRatio !== null && srPct !== null
+              ? <span style={{ color: percentileColor(srPct), fontWeight: 600 }}>{data.spotRatio.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
-
-        {/* Ratio F/S */}
         {showRatioFS && (
-          <div style={{ textAlign: 'right', paddingRight: 4 }}>
+          <div style={{ textAlign: 'right', fontSize: 12 }}>
             {data.loading ? <span style={dim}>…</span>
-              : ratioFS !== null && fsPct !== null
-              ? <div>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: percentileColor(fsPct) }}>
-                    {ratioFS >= 100 ? ratioFS.toFixed(0) : ratioFS >= 10 ? ratioFS.toFixed(1) : ratioFS.toFixed(2)}x
-                  </span>
-                  <PercentileBar pct={fsPct} color={percentileColor(fsPct)} />
-                </div>
+              : data.ratioFS !== null && fsPct !== null
+              ? <span style={{ color: percentileColor(fsPct), fontWeight: 600 }}>
+                  {data.ratioFS >= 100 ? data.ratioFS.toFixed(0) : data.ratioFS >= 10 ? data.ratioFS.toFixed(1) : data.ratioFS.toFixed(2)}x
+                </span>
               : <span style={dim}>—</span>}
           </div>
         )}
+        {showVolSpot && (
+          <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>
+            {data.loading ? <span style={dim}>…</span> : formatVol(data.volSpot || 0)}
+          </div>
+        )}
 
-        {/* Spacer pour le bouton + */}
         <div />
       </div>
 
       {/* Heatmap */}
-      {open && !data.loading && (
-        <div className="heatmap-animate" style={{ padding: '14px 24px 18px', background: 'var(--bg-heatmap)' }}>
+      {isOpen && !data.loading && (
+        <div className={forceOpen ? undefined : 'heatmap-animate'} style={{ padding: '14px 24px 18px', background: 'var(--bg-heatmap)' }}>
           <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>
-            {base} / usdt — rsi heatmap
+            {base}{data.symbol !== 'USDT.D' ? ' / usdt' : ' dominance'} — rsi heatmap
           </div>
 
-          {(spotRatio !== null || ratioFS !== null) && (
-            <div style={{ display: 'flex', gap: 24, marginBottom: 14, flexWrap: 'wrap' }}>
-              {spotRatio !== null && srPct !== null && (
-                <div style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: 1 }}>
-                  spot ratio <span style={{ color: percentileColor(srPct), fontWeight: 600 }}>{spotRatio.toFixed(1)}%</span>
-                  <span style={{ color: 'var(--text-dim)', marginLeft: 6, fontSize: 9 }}>
-                    {srPct >= 80 ? '— demande réelle forte' : srPct >= 40 ? '— mixte' : '— dominante spéculative'}
-                  </span>
-                </div>
-              )}
-              {ratioFS !== null && fsPct !== null && (
-                <div style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: 1 }}>
-                  ratio f/s <span style={{ color: percentileColor(fsPct), fontWeight: 600 }}>{ratioFS >= 10 ? ratioFS.toFixed(1) : ratioFS.toFixed(2)}x</span>
-                  <span style={{ color: 'var(--text-dim)', marginLeft: 6, fontSize: 9 }}>
-                    {fsPct >= 80 ? '— peu spéculatif' : fsPct >= 40 ? '— mixte' : '— très spéculatif'}
-                  </span>
-                </div>
-              )}
+          {data.symbol === 'USDT.D' && (
+            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginBottom: 12, letterSpacing: 1, lineHeight: 1.7 }}>
+              <span style={{ color: '#ef5350', fontWeight: 600 }}>Momentum &gt; 6.0</span> → USDT dominance en hausse → Bear Market signal<br/>
+              <span style={{ color: '#00e676', fontWeight: 600 }}>Momentum &lt; 4.0</span> → USDT dominance en baisse → Bull Market signal
             </div>
           )}
 
