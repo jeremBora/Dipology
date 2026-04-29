@@ -1,117 +1,20 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback, memo } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import ScreenerRow, { ContractData } from '@/components/ScreenerRow'
-import FilterBar, { Filters, defaultFilters, applyVolFilter } from '@/components/FilterBar'
-import ColumnPicker, { ExtraCol } from '@/components/ColumnPicker'
 
-type SortKey = 'symbol' | 'momentumDLive' | 'momentumWLive' | 'vol24h' | 'momentumDPrev' | 'momentumWPrev' | 'scorePctD' | 'scorePctW'
+type SortKey = 'symbol' | 'rsiD' | 'rsiW' | 'vol24h' | 'spotRatio' | 'ratioFS'
 type SortDir = 'asc' | 'desc'
 
-const BATCH_SIZE = 15
-const REFRESH_MS = 60000
+const BATCH_SIZE = 20
+const REFRESH_MS = 30000
 
-function buildGrid(extraCols: Set<ExtraCol>): string {
-  const base = '2fr 1fr 1fr 1fr'
-  const extras = Array.from(extraCols).map(() => '1fr').join(' ')
-  return extras ? base + ' ' + extras + ' 44px' : base + ' 44px'
+function percentileRank(values: number[], val: number): number {
+  const sorted = [...values].sort((a, b) => a - b)
+  const idx = sorted.findIndex(v => v >= val)
+  if (idx === -1) return 100
+  return Math.round((idx / sorted.length) * 100)
 }
-
-function applyFilters(rows: ContractData[], f: Filters): ContractData[] {
-  return rows.filter(d => {
-    if (d.loading) return true
-    const mDL  = d.daily?.liveT   ?? null
-    const mDPr = d.daily?.prevT   ?? null
-    const mWL  = d.weekly?.liveT  ?? null
-    const mWPr = d.weekly?.prevT  ?? null
-    const sPD  = d.daily?.score   ?? null
-    const sPW  = d.weekly?.score  ?? null
-    if (f.momentumDLive !== '' && (mDL  === null || mDL  < parseFloat(f.momentumDLive))) return false
-    if (f.momentumDPrev !== '' && (mDPr === null || mDPr < parseFloat(f.momentumDPrev))) return false
-    if (f.momentumWLive !== '' && (mWL  === null || mWL  < parseFloat(f.momentumWLive))) return false
-    if (f.momentumWPrev !== '' && (mWPr === null || mWPr < parseFloat(f.momentumWPrev))) return false
-    if (f.scorePctD !== '' && (sPD === null || sPD < parseFloat(f.scorePctD))) return false
-    if (f.scorePctW !== '' && (sPW === null || sPW < parseFloat(f.scorePctW))) return false
-    if (f.vol24hMin !== '' && !applyVolFilter(d.vol24h ?? 0, f.vol24hMin)) return false
-    if (f.priceUnderS1 && !d.pivot?.priceUnderS1) return false
-    return true
-  })
-}
-
-// CSS injecté une seule fois pour les boutons du header
-const headerBtnStyle = `
-  .hdr-btn {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    gap: 4px;
-    padding: 12px 12px;
-    cursor: pointer;
-    color: #4a9060;
-    font-size: 11px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    font-family: Syne, sans-serif;
-    font-weight: 700;
-    user-select: none;
-    background: transparent;
-    border: none;
-    border-right: 1px solid #0a2010;
-    outline: none;
-    transition: color 0.15s, background 0.15s;
-  }
-  .hdr-btn:hover { color: #00ff44 !important; background: #071409 !important; }
-  .hdr-btn.active { color: #00ff44; }
-  .hdr-btn.center { justify-content: center; }
-  .hdr-btn.left   { justify-content: flex-start; }
-`
-
-interface HeaderProps {
-  gridCols:    string
-  sortKey:     SortKey
-  sortDir:     SortDir
-  totalSymbols: number
-  extraCols:   Set<ExtraCol>
-  onSort:      (col: SortKey) => void
-  onToggle:    (col: ExtraCol) => void
-}
-
-const ScreenerHeader = memo(function ScreenerHeader({
-  gridCols, sortKey, sortDir, totalSymbols, extraCols, onSort, onToggle
-}: HeaderProps) {
-  function ColBtn({ col, label, center }: { col: SortKey; label: string; center?: boolean }) {
-    const active = sortKey === col
-    return (
-      <button
-        onClick={() => onSort(col)}
-        className={`hdr-btn ${active ? 'active' : ''} ${center ? 'center' : 'left'}`}>
-        {label}
-        {col === 'symbol' && (
-          <span style={{ color:'#1a4028', fontWeight:600, fontSize:11, marginLeft:6 }}>
-            — {totalSymbols || '…'}
-          </span>
-        )}
-        {active && <span style={{ fontSize:9, marginLeft:3 }}>{sortDir === 'asc' ? '▲' : '▼'}</span>}
-      </button>
-    )
-  }
-
-  return (
-    <div style={{ display:'grid', gridTemplateColumns: gridCols, background:'#030805', borderBottom:'1px solid #0a2010' }}>
-      <ColBtn col="symbol"        label="Contract" />
-      <ColBtn col="momentumDLive" label="Momentum D" center />
-      <ColBtn col="momentumWLive" label="Momentum W" center />
-      <ColBtn col="vol24h"        label="Vol 24H"    center />
-      {extraCols.has('momentumDPrev') && <ColBtn col="momentumDPrev" label="Momentum D-1" center />}
-      {extraCols.has('momentumWPrev') && <ColBtn col="momentumWPrev" label="Momentum W-1" center />}
-      {extraCols.has('scorePctD')     && <ColBtn col="scorePctD"     label="Score % D"    center />}
-      {extraCols.has('scorePctW')     && <ColBtn col="scorePctW"     label="Score % W"    center />}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:'6px 8px' }}>
-        <ColumnPicker active={extraCols} onToggle={onToggle} />
-      </div>
-    </div>
-  )
-})
 
 export default function Home() {
   const [contracts, setContracts]       = useState<Map<string, ContractData>>(new Map())
@@ -121,47 +24,76 @@ export default function Home() {
   const [sortDir, setSortDir]           = useState<SortDir>('desc')
   const [loadedCount, setLoadedCount]   = useState(0)
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [filters, setFilters]           = useState<Filters>(defaultFilters)
-  const [extraCols, setExtraCols]       = useState<Set<ExtraCol>>(new Set())
-  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null)
-  const abortRef     = useRef<AbortController | null>(null)
+  const [theme, setTheme]               = useState<'dark' | 'light'>('dark')
+  const refreshTimer                    = useRef<ReturnType<typeof setInterval> | null>(null)
+  const abortRef                        = useRef<AbortController | null>(null)
 
   useEffect(() => {
-    fetch('/api/symbols').then(r => r.json()).then(data => {
-      setSymbols(data.symbols)
-      setTotalSymbols(data.total)
-      const init = new Map<string, ContractData>()
-      data.symbols.forEach((sym: string) => {
-        init.set(sym, {
-          symbol: sym,
-          daily:   { history:[], historyT:[], live:null, liveT:null, prev:null, prevT:null, score:null, count:0, incomplete:false },
-          weekly:  { history:[], historyT:[], live:null, liveT:null, prev:null, prevT:null, score:null, count:0, incomplete:false },
-          pivot:   { s1:null, priceUnderS1:false },
-          vol24h:0, incomplete:false, currentPrice:0, loading:true,
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
+
+  useEffect(() => {
+    fetch('/api/symbols')
+      .then(r => r.json())
+      .then(data => {
+        setSymbols(data.symbols)
+        setTotalSymbols(data.total)
+        const init = new Map<string, ContractData>()
+        data.symbols.forEach((sym: string) => {
+          init.set(sym, {
+            symbol: sym,
+            daily:   { history: [], live: null, score: null, count: 0, incomplete: false },
+            weekly:  { history: [], live: null, score: null, count: 0, incomplete: false },
+            vol24h: 0, volSpot: null,
+            spotRatio: null, ratioFS: null,
+            spotRatioPct: null, ratioFSPct: null,
+            incomplete: false, loading: true,
+          })
         })
+        setContracts(init)
       })
-      setContracts(init)
+  }, [])
+
+  const recalcPercentiles = useCallback((map: Map<string, ContractData>) => {
+    const all = Array.from(map.values())
+    const srVals = all.map(c => c.spotRatio).filter((v): v is number => v !== null)
+    const fsVals = all.map(c => c.ratioFS).filter((v): v is number => v !== null)
+    const updated = new Map(map)
+    updated.forEach((c, sym) => {
+      const next = { ...c }
+      if (c.spotRatio !== null && srVals.length > 0)
+        next.spotRatioPct = percentileRank(srVals, c.spotRatio)
+      if (c.ratioFS !== null && fsVals.length > 0)
+        next.ratioFSPct = 100 - percentileRank(fsVals, c.ratioFS)
+      updated.set(sym, next)
     })
+    return updated
   }, [])
 
   const loadBatch = useCallback(async (syms: string[], signal?: AbortSignal) => {
     for (let i = 0; i < syms.length; i += BATCH_SIZE) {
       if (signal?.aborted) break
       const batch = syms.slice(i, i + BATCH_SIZE)
-      await Promise.allSettled(batch.map(async sym => {
-        try {
-          const res = await fetch(`/api/rsi?symbol=${sym}`, { signal })
-          if (!res.ok) return
-          const data = await res.json()
-          setContracts(prev => { const next = new Map(prev); next.set(sym, { ...data, loading:false }); return next })
-          setLoadedCount(c => c + 1)
-        } catch { /* ignore */ }
-      }))
+      await Promise.allSettled(
+        batch.map(async sym => {
+          try {
+            const res = await fetch(`/api/rsi?symbol=${sym}`, { signal })
+            if (!res.ok) return
+            const data = await res.json()
+            setContracts(prev => {
+              const next = new Map(prev)
+              next.set(sym, { ...data, loading: false, error: false })
+              return recalcPercentiles(next)
+            })
+            setLoadedCount(c => c + 1)
+          } catch { /* ignore */ }
+        })
+      )
     }
-  }, [])
+  }, [recalcPercentiles])
 
   useEffect(() => {
-    if (!symbols.length) return
+    if (symbols.length === 0) return
     abortRef.current?.abort()
     abortRef.current = new AbortController()
     setLoadedCount(0)
@@ -169,7 +101,7 @@ export default function Home() {
   }, [symbols, loadBatch])
 
   useEffect(() => {
-    if (!symbols.length) return
+    if (symbols.length === 0) return
     refreshTimer.current = setInterval(async () => {
       setIsRefreshing(true)
       abortRef.current?.abort()
@@ -180,100 +112,159 @@ export default function Home() {
     return () => { if (refreshTimer.current) clearInterval(refreshTimer.current) }
   }, [symbols, loadBatch])
 
-  function toggleExtraCol(col: ExtraCol) {
-    setExtraCols(prev => { const next = new Set(prev); if (next.has(col)) next.delete(col); else next.add(col); return next })
-  }
-
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
     else { setSortKey(key); setSortDir(key === 'symbol' ? 'asc' : 'desc') }
   }
 
   function getSortedRows(): ContractData[] {
-    const filtered = applyFilters(Array.from(contracts.values()), filters)
-    return filtered.sort((a, b) => {
+    return Array.from(contracts.values()).sort((a, b) => {
       if (sortKey !== 'symbol') {
         if (a.incomplete && !b.incomplete) return 1
         if (!a.incomplete && b.incomplete) return -1
       }
       let va: number | string = 0, vb: number | string = 0
-      if (sortKey === 'symbol')        { va = a.symbol;              vb = b.symbol }
-      if (sortKey === 'momentumDLive') { va = a.daily?.live  ?? -1;  vb = b.daily?.live  ?? -1 }
-      if (sortKey === 'momentumWLive') { va = a.weekly?.live ?? -1;  vb = b.weekly?.live ?? -1 }
-      if (sortKey === 'momentumDPrev') { va = a.daily?.prev  ?? -1;  vb = b.daily?.prev  ?? -1 }
-      if (sortKey === 'momentumWPrev') { va = a.weekly?.prev ?? -1;  vb = b.weekly?.prev ?? -1 }
-      if (sortKey === 'scorePctD')     { va = a.daily?.score ?? -1;  vb = b.daily?.score ?? -1 }
-      if (sortKey === 'scorePctW')     { va = a.weekly?.score ?? -1; vb = b.weekly?.score ?? -1 }
-      if (sortKey === 'vol24h')        { va = a.vol24h ?? 0;         vb = b.vol24h ?? 0 }
+      if (sortKey === 'symbol')    { va = a.symbol;              vb = b.symbol }
+      if (sortKey === 'rsiD')      { va = a.daily?.score  ?? -1; vb = b.daily?.score  ?? -1 }
+      if (sortKey === 'rsiW')      { va = a.weekly?.score ?? -1; vb = b.weekly?.score ?? -1 }
+      if (sortKey === 'vol24h')    { va = a.vol24h ?? 0;         vb = b.vol24h ?? 0 }
+      if (sortKey === 'spotRatio') { va = a.spotRatio ?? -1;     vb = b.spotRatio ?? -1 }
+      if (sortKey === 'ratioFS')   { va = a.ratioFS ?? 999999;   vb = b.ratioFS ?? 999999 }
       if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb as string) : (vb as string).localeCompare(va)
       return sortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number)
     })
   }
 
   const sorted    = getSortedRows()
-  const allRows   = Array.from(contracts.values())
-  const filtered  = applyFilters(allRows, filters)
   const pct       = totalSymbols > 0 ? Math.round((loadedCount / totalSymbols) * 100) : 0
   const allLoaded = loadedCount >= totalSymbols && totalSymbols > 0
-  const gridCols  = buildGrid(extraCols)
+
+  function ColBtn({ col, label, align, tooltip }: {
+    col: SortKey; label: string; align?: string; tooltip?: string
+  }) {
+    const active = sortKey === col
+    return (
+      <button onClick={() => handleSort(col)} title={tooltip} style={{
+        background: 'none', border: 'none',
+        color: active ? 'var(--accent)' : 'var(--text-dim)',
+        fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
+        fontFamily: 'Syne, sans-serif', fontWeight: 500, cursor: 'pointer',
+        display: 'flex', alignItems: 'center',
+        justifyContent: align === 'left' ? 'flex-start' : 'center',
+        gap: 4, padding: '10px 12px', width: '100%',
+        transition: 'color 0.2s, background 0.2s',
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLButtonElement
+        el.style.color = 'var(--accent)'
+        el.style.background = theme === 'dark' ? '#0a1428' : '#eef8f2'
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLButtonElement
+        el.style.color = active ? 'var(--accent)' : 'var(--text-dim)'
+        el.style.background = 'none'
+      }}>
+        {label}
+        {col === 'symbol' && (
+          <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 10, marginLeft: 4 }}>
+            — {totalSymbols > 0 ? totalSymbols : '…'}
+          </span>
+        )}
+        {active && <span style={{ fontSize: 9 }}>{sortDir === 'asc' ? '▲' : '▼'}</span>}
+      </button>
+    )
+  }
 
   return (
-    <main style={{ position:'relative', zIndex:1, padding:'24px 16px', maxWidth:1400, margin:'0 auto' }}>
-      <style>{headerBtnStyle}</style>
+    <main style={{ position: 'relative', zIndex: 1, padding: '24px 16px', maxWidth: 1300, margin: '0 auto' }}>
 
-      <div style={{ textAlign:'center', padding:'28px 0 20px' }}>
-        <h1 style={{ fontFamily:'Dodger, Syne, sans-serif', fontSize:36, fontWeight:'normal',
-          color:'#00ff44', letterSpacing:6, textTransform:'uppercase',
-          textShadow:'0 0 30px #00ff4466, 0 0 60px #00ff4422' }}>
-          Dipology Screener
-        </h1>
-        <div style={{ display:'inline-flex', alignItems:'center', gap:6, marginTop:8,
-          fontSize:10, color:'#4a9060', letterSpacing:3, textTransform:'lowercase', fontWeight:600 }}>
-          <span style={{ width:5, height:5, borderRadius:'50%', background:'#00ff88',
-            display:'inline-block', animation:'livePulse 1.8s infinite' }} />
+      <div style={{ textAlign: 'center', padding: '28px 0 24px', position: 'relative' }}>
+        {/* Bouton thème */}
+        <button
+          onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+          title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+          style={{
+            position: 'absolute', top: 28, right: 0,
+            background: 'var(--bg-panel)', border: '1px solid var(--border)',
+            color: 'var(--text-muted)', borderRadius: 8,
+            padding: '6px 14px', cursor: 'pointer', fontSize: 15,
+            transition: 'all 0.2s',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)'}
+          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'}
+        >
+          {theme === 'dark' ? '☀️' : '🌙'}
+        </button>
+
+        <h1 style={{
+          fontSize: 28, fontWeight: 200, color: 'var(--accent)',
+          letterSpacing: 10, textTransform: 'uppercase', fontFamily: 'Syne, sans-serif',
+        }}>Dipology Capital</h1>
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6,
+          fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3,
+          textTransform: 'lowercase', fontWeight: 300,
+        }}>
+          <span style={{
+            width: 5, height: 5, borderRadius: '50%', background: 'var(--green-live)',
+            display: 'inline-block', animation: 'livePulse 1.8s infinite',
+          }} />
           live
         </div>
       </div>
 
-      <FilterBar filters={filters} onChange={setFilters}
-        activeCount={filtered.filter(d => !d.loading).length}
-        totalCount={allRows.filter(d => !d.loading).length} />
-
       {!allLoaded && totalSymbols > 0 && (
-        <div style={{ marginBottom:10 }}>
-          <div style={{ height:2, background:'#0a2010', borderRadius:1, overflow:'hidden' }}>
-            <div style={{ height:'100%', width:`${pct}%`, background:'#00ff44', transition:'width 0.3s ease', borderRadius:1 }} />
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ height: 2, background: 'var(--border)', borderRadius: 1, overflow: 'hidden' }}>
+            <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', transition: 'width 0.3s ease', borderRadius: 1 }} />
           </div>
-          <div style={{ textAlign:'right', fontSize:11, color:'#1a4028', marginTop:4, letterSpacing:1, fontWeight:600 }}>
-            {loadedCount} / {totalSymbols} chargés
+          <div style={{ textAlign: 'right', fontSize: 10, color: 'var(--text-dim)', marginTop: 4, letterSpacing: 1 }}>
+            {loadedCount} / {totalSymbols} contrats chargés
           </div>
         </div>
       )}
+
       {isRefreshing && allLoaded && (
-        <div style={{ textAlign:'right', fontSize:11, color:'#1a4028', marginBottom:6, letterSpacing:1 }}>↻ updating…</div>
+        <div style={{ textAlign: 'right', fontSize: 10, color: 'var(--text-dim)', marginBottom: 8, letterSpacing: 1 }}>
+          ↻ mise à jour…
+        </div>
       )}
 
-      <div style={{ background:'#040d06', border:'1px solid #0a2010', borderRadius:16, overflow:'hidden' }}>
-        <ScreenerHeader
-          gridCols={gridCols}
-          sortKey={sortKey}
-          sortDir={sortDir}
-          totalSymbols={totalSymbols}
-          extraCols={extraCols}
-          onSort={handleSort}
-          onToggle={toggleExtraCol}
-        />
+      {/* Légende percentile */}
+      <div style={{ marginBottom: 10, fontSize: 9, color: 'var(--text-dim)', letterSpacing: 1 }}>
+        <span style={{ color: '#00e676' }}>■</span> top 20% &nbsp;
+        <span style={{ color: '#fff176' }}>■</span> milieu 60% &nbsp;
+        <span style={{ color: '#ef5350' }}>■</span> bas 20%
+        &nbsp;— couleurs relatives au marché en cours
+      </div>
 
+      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 1fr',
+          background: theme === 'dark' ? '#060910' : '#f0faf4',
+          borderBottom: '1px solid var(--border)',
+        }}>
+          <ColBtn col="symbol"    label="Contrat"    align="left" />
+          <ColBtn col="rsiD"      label="RSI Daily" />
+          <ColBtn col="rsiW"      label="RSI Weekly" />
+          <ColBtn col="vol24h"    label="Vol 24H" />
+          <ColBtn col="spotRatio" label="Spot Ratio"
+            tooltip="% spot dans le volume total. Plus c'est élevé = demande réelle. Coloré par percentile relatif." />
+          <ColBtn col="ratioFS"   label="Ratio F/S"
+            tooltip="Futures ÷ Spot. Plus c'est bas = moins spéculatif. Coloré par percentile relatif." />
+        </div>
         <div>
           {sorted.length === 0 && (
-            <div style={{ padding:'40px 24px', textAlign:'center', color:'#1a4028', fontSize:12, letterSpacing:2, fontWeight:600 }}>
-              {allRows.filter(d => !d.loading).length > 0 ? 'no contracts match the filters' : 'loading contracts…'}
+            <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>
+              chargement des contrats…
             </div>
           )}
-          {sorted.map((row, i) => (
-            <ScreenerRow key={row.symbol} data={row} index={i} extraCols={extraCols} gridCols={gridCols} />
-          ))}
+          {sorted.map((row, i) => <ScreenerRow key={row.symbol} data={row} index={i} />)}
         </div>
+      </div>
+
+      <div style={{ textAlign: 'center', marginTop: 24, fontSize: 10, color: 'var(--text-dim)', letterSpacing: 2, fontWeight: 300 }}>
+        données binance futures · usdt perpétuel · rsi 14 périodes
       </div>
     </main>
   )
