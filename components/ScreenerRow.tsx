@@ -1,3 +1,4 @@
+import React from 'react'
 'use client'
 
 import { useState } from 'react'
@@ -11,7 +12,7 @@ const HeatmapRow = require('./HeatmapRow').default as (props: {
   history: (number | null)[]
   live: number | null
   score: number | null
-}) => JSX.Element
+}) => React.ReactElement
 
 interface RsiData {
   history: (number | null)[]
