@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ExtraCol } from './ColumnPicker'
 import { rsiTextColor } from '@/lib/rsi'
+import { getCategory } from '@/lib/categories'
 
 const HeatmapRow = require('./HeatmapRow').default as (props: {
   label: string
@@ -34,16 +35,18 @@ export interface ContractData {
   incomplete: boolean
   loading?: boolean
   error?: boolean
-  isSpecial?: boolean // for USDT.D
+  isSpecial?: boolean
 }
 
-function formatVol(v: number): string {
+function formatVol(v: number | null | undefined): string {
+  if (!v || v === 0) return '—'
   if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B'
   if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M'
   if (v >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'K'
-  return v > 0 ? '$' + v.toFixed(0) : '—'
+  return '$' + v.toFixed(0)
 }
 
+// Momentum = RSI ÷ 10, displayed with Syne font for better readability
 function fmtMom(v: number | null | undefined): string {
   if (v === null || v === undefined) return '—'
   return (v / 10).toFixed(2)
@@ -57,17 +60,23 @@ function percentileColor(pct: number): string {
   return '#ef5350'
 }
 
-// USDT.D sentiment label
-function usdtDLabel(momentum: number | null | undefined): { text: string; color: string } | null {
-  if (momentum === null || momentum === undefined) return null
-  const m = momentum / 10
-  if (m > 6) return { text: '⚠ Bear Market Signal', color: '#ef5350' }
-  if (m < 4) return { text: '✓ Bull Market Signal', color: '#00e676' }
-  return { text: '~ Neutre', color: '#fff176' }
+const CAT_COLORS: Record<string, { bg: string; color: string }> = {
+  L1:     { bg: 'rgba(0,150,255,0.15)', color: '#60b0ff' },
+  L2:     { bg: 'rgba(0,200,200,0.15)', color: '#40d0d0' },
+  DeFi:   { bg: 'rgba(150,0,255,0.15)', color: '#c080ff' },
+  AI:     { bg: 'rgba(0,255,150,0.15)', color: '#00d880' },
+  Meme:   { bg: 'rgba(255,80,150,0.15)', color: '#ff80b0' },
+  RWA:    { bg: 'rgba(255,200,0,0.15)', color: '#ffc040' },
+  Gaming: { bg: 'rgba(255,120,0,0.15)', color: '#ff8040' },
+  Infra:  { bg: 'rgba(100,200,255,0.15)', color: '#60c8ff' },
+  Privacy:{ bg: 'rgba(150,150,150,0.15)', color: '#a0a0a0' },
+  CEX:    { bg: 'rgba(255,180,0,0.15)', color: '#ffb020' },
+  LST:    { bg: 'rgba(0,180,120,0.15)', color: '#00c080' },
+  Social: { bg: 'rgba(255,100,200,0.15)', color: '#ff80d0' },
 }
 
 export default function ScreenerRow({
-  data, index, extraCols, gridCols, forceOpen, isPinned
+  data, index, extraCols, gridCols, forceOpen, isPinned, isFavorite, onToggleFavorite
 }: {
   data: ContractData
   index: number
@@ -75,10 +84,12 @@ export default function ScreenerRow({
   gridCols: string
   forceOpen?: boolean
   isPinned?: boolean
+  isFavorite?: boolean
+  onToggleFavorite?: () => void
 }) {
   const [open, setOpen] = useState(false)
   const isOpen = forceOpen || open
-  const base = data.symbol === 'USDT.D' ? 'USDT.D' : data.symbol.replace('USDT', '')
+  const base = data.symbol.replace('USDT', '').replace(/^1000/, '')
 
   const dLive   = data.daily?.live
   const wLive   = data.weekly?.live
@@ -99,163 +110,192 @@ export default function ScreenerRow({
   const showRatioFS   = extraCols.has('ratioFS' as ExtraCol)
   const showVolSpot   = extraCols.has('volSpot' as ExtraCol)
 
-  const dim = { color: 'var(--text-dim)', fontSize: 11 }
-  const sentiment = data.symbol === 'USDT.D' ? usdtDLabel(dLive) : null
-
-  const rowBg = isPinned
-    ? (data.symbol === 'USDT.D' ? 'rgba(255,159,67,0.04)' : 'rgba(0,255,68,0.04)')
-    : 'transparent'
+  const dim = { color: 'var(--text-dim)', fontSize: 11, fontFamily: "'Space Mono', monospace" }
+  const cat = getCategory(data.symbol)
+  const catStyle = cat ? CAT_COLORS[cat] : null
 
   return (
     <div
-      className={isPinned ? undefined : 'row-animate'}
-      style={{
-        borderBottom: '1px solid #0a0f1e',
-        ...(isPinned ? {} : { animationDelay: `${Math.min(index * 20, 400)}ms` }),
-      }}
+      className="row-animate"
+      style={{ borderBottom: '1px solid var(--border)', animationDelay: `${Math.min(index * 20, 400)}ms` }}
     >
       <div
         onClick={() => !data.loading && !forceOpen && setOpen(o => !o)}
         style={{
           display: 'grid', gridTemplateColumns: gridCols,
-          padding: '10px 24px',
+          padding: '9px 16px',
           cursor: (data.loading || forceOpen) ? 'default' : 'pointer',
-          background: isOpen ? 'var(--bg-row-hover)' : rowBg,
+          background: isOpen ? 'var(--bg-row-hover)' : 'transparent',
           borderBottom: isOpen ? '1px solid var(--border)' : 'none',
           transition: 'background 0.15s', alignItems: 'center',
         }}
         onMouseEnter={e => { if (!isOpen && !forceOpen) (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-row-hover)' }}
-        onMouseLeave={e => { if (!isOpen && !forceOpen) (e.currentTarget as HTMLDivElement).style.background = rowBg }}
+        onMouseLeave={e => { if (!isOpen && !forceOpen) (e.currentTarget as HTMLDivElement).style.background = 'transparent' }}
       >
         {/* Contrat */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {/* Favorite star */}
+          <button
+            onClick={e => { e.stopPropagation(); onToggleFavorite?.() }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: isFavorite ? '#f0a020' : 'var(--text-dim)', padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
+          >{isFavorite ? '★' : '☆'}</button>
+
           {!forceOpen && (
-            <span style={{ fontSize: 8, color: isOpen ? 'var(--accent-dim)' : 'var(--text-dim)', transition: 'transform 0.2s', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none' }}>▶</span>
+            <span style={{ fontSize: 7, color: isOpen ? 'var(--accent-dim)' : 'var(--text-dim)', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▶</span>
           )}
-          {isPinned && (
-            <span style={{ fontSize: 9, color: data.symbol === 'USDT.D' ? '#ff9f43' : 'var(--accent)', letterSpacing: 1 }}>
-              {data.symbol === 'USDT.D' ? '◆' : '★'}
-            </span>
+
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 0.5, fontFamily: "'Space Mono', monospace" }}>{base}</span>
+          <span style={{ fontSize: 9, fontWeight: 300, color: 'var(--text-muted)', letterSpacing: 1, textTransform: 'lowercase' }}>/usdt</span>
+
+          {catStyle && cat && (
+            <span style={{ fontSize: 8, background: catStyle.bg, color: catStyle.color, borderRadius: 3, padding: '1px 5px', letterSpacing: 0.5, fontWeight: 600, flexShrink: 0 }}>{cat}</span>
           )}
-          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)', letterSpacing: 0.5 }}>{base}</span>
-          {data.symbol !== 'USDT.D' && (
-            <span style={{ fontSize: 10, fontWeight: 300, color: 'var(--text-muted)', letterSpacing: 2, textTransform: 'lowercase' }}>/usdt</span>
-          )}
-          {sentiment && (
-            <span style={{ fontSize: 9, color: sentiment.color, letterSpacing: 1, fontWeight: 600 }}>{sentiment.text}</span>
-          )}
-          {data.incomplete && !data.isSpecial && (
-            <span style={{ fontSize: 9, background: 'var(--warn-bg)', color: 'var(--warn)', border: '1px solid var(--warn-border)', padding: '2px 6px', borderRadius: 4, letterSpacing: 1 }}>missing data</span>
+
+          {data.incomplete && (
+            <span style={{ fontSize: 8, background: 'var(--warn-bg)', color: 'var(--warn)', border: '1px solid var(--warn-border)', padding: '1px 5px', borderRadius: 3, letterSpacing: 0.5, flexShrink: 0 }}>!</span>
           )}
         </div>
 
         {/* Momentum D */}
-        <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 400 }}>
+        <div style={{ textAlign: 'right' }}>
           {data.loading ? <span style={dim}>…</span>
             : dLive !== null && dLive !== undefined
-            ? <span style={{ color: rsiTextColor(dLive) }}>{fmtMom(dLive)}</span>
+            ? <span style={{ color: rsiTextColor(dLive), fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700 }}>{fmtMom(dLive)}</span>
             : <span style={dim}>—</span>}
         </div>
 
         {/* Momentum W */}
-        <div style={{ textAlign: 'right', fontSize: 13, fontWeight: 400 }}>
+        <div style={{ textAlign: 'right' }}>
           {data.loading ? <span style={dim}>…</span>
             : wLive !== null && wLive !== undefined
-            ? <span style={{ color: rsiTextColor(wLive) }}>{fmtMom(wLive)}</span>
+            ? <span style={{ color: rsiTextColor(wLive), fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700 }}>{fmtMom(wLive)}</span>
             : <span style={dim}>—</span>}
         </div>
 
-        {/* Vol 24H */}
-        <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>
-          {data.loading ? <span style={dim}>…</span> : formatVol(data.vol24h || 0)}
+        {/* F Vol 24H */}
+        <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
+          {data.loading ? <span style={dim}>…</span> : formatVol(data.vol24h)}
         </div>
 
+        {/* S Vol 24H */}
+        {showVolSpot && (
+          <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
+            {data.loading ? <span style={dim}>…</span> : formatVol(data.volSpot)}
+          </div>
+        )}
+
+        {/* Mom D-1 */}
         {showMomDPrev && (
-          <div style={{ textAlign: 'right', fontSize: 12 }}>
+          <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : dPrev !== null && dPrev !== undefined
-              ? <span style={{ color: rsiTextColor(dPrev) }}>{fmtMom(dPrev)}</span>
+              ? <span style={{ color: rsiTextColor(dPrev), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{fmtMom(dPrev)}</span>
               : <span style={dim}>—</span>}
           </div>
         )}
+
+        {/* Mom W-1 */}
         {showMomWPrev && (
-          <div style={{ textAlign: 'right', fontSize: 12 }}>
+          <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : wPrev !== null && wPrev !== undefined
-              ? <span style={{ color: rsiTextColor(wPrev) }}>{fmtMom(wPrev)}</span>
+              ? <span style={{ color: rsiTextColor(wPrev), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{fmtMom(wPrev)}</span>
               : <span style={dim}>—</span>}
           </div>
         )}
+
+        {/* Score D */}
         {showScoreD && (
-          <div style={{ textAlign: 'right', fontSize: 12 }}>
+          <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : dScore !== null && dScore !== undefined
-              ? <span style={{ color: rsiTextColor(dScore) }}>{dScore.toFixed(1)}%</span>
+              ? <span style={{ color: rsiTextColor(dScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{dScore.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
+
+        {/* Score W */}
         {showScoreW && (
-          <div style={{ textAlign: 'right', fontSize: 12 }}>
+          <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : wScore !== null && wScore !== undefined
-              ? <span style={{ color: rsiTextColor(wScore) }}>{wScore.toFixed(1)}%</span>
+              ? <span style={{ color: rsiTextColor(wScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{wScore.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
+
+        {/* Turn-over (Spot Ratio) */}
         {showSpotRatio && (
-          <div style={{ textAlign: 'right', fontSize: 12 }}>
+          <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : data.spotRatio !== null && srPct !== null
-              ? <span style={{ color: percentileColor(srPct), fontWeight: 600 }}>{data.spotRatio.toFixed(1)}%</span>
+              ? <span style={{ color: percentileColor(srPct), fontFamily: "'Space Mono', monospace", fontSize: 12, fontWeight: 600 }}>{data.spotRatio.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
+
+        {/* Ratio F/S */}
         {showRatioFS && (
-          <div style={{ textAlign: 'right', fontSize: 12 }}>
+          <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : data.ratioFS !== null && fsPct !== null
-              ? <span style={{ color: percentileColor(fsPct), fontWeight: 600 }}>
+              ? <span style={{ color: percentileColor(fsPct), fontFamily: "'Space Mono', monospace", fontSize: 12, fontWeight: 600 }}>
                   {data.ratioFS >= 100 ? data.ratioFS.toFixed(0) : data.ratioFS >= 10 ? data.ratioFS.toFixed(1) : data.ratioFS.toFixed(2)}x
                 </span>
               : <span style={dim}>—</span>}
-          </div>
-        )}
-        {showVolSpot && (
-          <div style={{ textAlign: 'right', fontSize: 12, color: 'var(--text-muted)' }}>
-            {data.loading ? <span style={dim}>…</span> : formatVol(data.volSpot || 0)}
           </div>
         )}
 
         <div />
       </div>
 
-      {/* Heatmap */}
+      {/* Heatmap panel */}
       {isOpen && !data.loading && (
-        <div className={forceOpen ? undefined : 'heatmap-animate'} style={{ padding: '14px 24px 18px', background: 'var(--bg-heatmap)' }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>
-            {base}{data.symbol !== 'USDT.D' ? ' / usdt' : ' dominance'} — rsi heatmap
+        <div className="heatmap-animate" style={{ padding: '14px 20px 16px', background: 'var(--bg-heatmap)' }}>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, fontFamily: "'Dodger', 'Syne', sans-serif" }}>
+            {base} — Momentum Heatmap
           </div>
-
-          {data.symbol === 'USDT.D' && (
-            <div style={{ fontSize: 10, color: 'var(--text-dim)', marginBottom: 12, letterSpacing: 1, lineHeight: 1.7 }}>
-              <span style={{ color: '#ef5350', fontWeight: 600 }}>Momentum &gt; 6.0</span> → USDT dominance en hausse → Bear Market signal<br/>
-              <span style={{ color: '#00e676', fontWeight: 600 }}>Momentum &lt; 4.0</span> → USDT dominance en baisse → Bull Market signal
-            </div>
-          )}
 
           <div style={{ display: 'flex', gap: 3, alignItems: 'center', marginBottom: 4 }}>
             <div style={{ width: 18, flexShrink: 0 }} />
             {Array(9).fill(0).map((_, i) => (
-              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--text-dim)', letterSpacing: 1 }}>J-{9 - i}</div>
+              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--text-dim)', letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>
+                -{9 - i}
+              </div>
             ))}
             <div style={{ width: 1, margin: '0 2px', flexShrink: 0, opacity: 0 }} />
-            <div style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1 }}>now</div>
-            <div style={{ flex: 1.5, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1 }}>score</div>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>now</div>
+            <div style={{ flex: 1.5, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>score</div>
           </div>
 
-          <HeatmapRow label="D" historyT={dHist} liveT={dLive ?? null} history={dHist} live={dLive ?? null} score={dScore ?? null} />
+          <HeatmapRow
+            label="D"
+            historyT={dHist}
+            liveT={dLive ?? null}
+            history={dHist}
+            live={dLive ?? null}
+            score={dScore ?? null}
+          />
           <div style={{ marginTop: 3 }}>
-            <HeatmapRow label="W" historyT={wHist} liveT={wLive ?? null} history={wHist} live={wLive ?? null} score={wScore ?? null} />
+            <HeatmapRow
+              label="W"
+              historyT={wHist}
+              liveT={wLive ?? null}
+              history={wHist}
+              live={wLive ?? null}
+              score={wScore ?? null}
+            />
+          </div>
+
+          {/* Values on /10 note */}
+          <div style={{ marginTop: 8, fontSize: 9, color: 'var(--text-dim)', letterSpacing: 1 }}>
+            mom D = <span style={{ color: rsiTextColor(dLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(dLive)}</span>
+            &nbsp;·&nbsp;
+            mom W = <span style={{ color: rsiTextColor(wLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(wLive)}</span>
+            &nbsp;·&nbsp;
+            score D = <span style={{ fontFamily: "'Space Mono', monospace" }}>{dScore !== null && dScore !== undefined ? dScore.toFixed(1) + '%' : '—'}</span>
+            &nbsp;·&nbsp;
+            score W = <span style={{ fontFamily: "'Space Mono', monospace" }}>{wScore !== null && wScore !== undefined ? wScore.toFixed(1) + '%' : '—'}</span>
           </div>
         </div>
       )}

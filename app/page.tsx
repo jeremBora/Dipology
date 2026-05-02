@@ -4,14 +4,42 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import ScreenerRow, { ContractData } from '@/components/ScreenerRow'
 import ColumnPicker, { ExtraCol } from '@/components/ColumnPicker'
 import FilterBar, { Filters, defaultFilters, applyVolFilter } from '@/components/FilterBar'
+import { getCategory, ALL_CATEGORIES } from '@/lib/categories'
 
-type SortKey = 'symbol' | 'momentumD' | 'momentumW' | 'vol24h' | 'spotRatio' | 'ratioFS'
+type SortKey = 'symbol' | 'momentumD' | 'momentumW' | 'vol24h' | 'spotRatio' | 'ratioFS' | 'volSpot'
 type SortDir = 'asc' | 'desc'
 
 const BATCH_SIZE = 20
-const REFRESH_MS = 30000
-
 const PINNED_SYMBOLS = ['BTCUSDT', 'USDT.D']
+const EXCLUDED_SYMBOLS = new Set(['BTCDOMUSDT', 'USDCUSDT'])
+
+// Favoris persistants via localStorage
+function loadFavorites(): Set<string> {
+  if (typeof window === 'undefined') return new Set()
+  try {
+    const raw = localStorage.getItem('dipology_favorites')
+    return raw ? new Set(JSON.parse(raw)) : new Set()
+  } catch { return new Set() }
+}
+
+function saveFavorites(favs: Set<string>) {
+  if (typeof window === 'undefined') return
+  try { localStorage.setItem('dipology_favorites', JSON.stringify([...favs])) } catch {}
+}
+
+// Column order persistant
+function loadColOrder(): string[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem('dipology_col_order')
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function saveColOrder(order: string[]) {
+  if (typeof window === 'undefined') return
+  try { localStorage.setItem('dipology_col_order', JSON.stringify(order)) } catch {}
+}
 
 function percentileRank(values: number[], val: number): number {
   const sorted = [...values].sort((a, b) => a - b)
@@ -21,23 +49,40 @@ function percentileRank(values: number[], val: number): number {
 }
 
 export default function Home() {
-  const [contracts, setContracts]         = useState<Map<string, ContractData>>(new Map())
-  const [symbols, setSymbols]             = useState<string[]>([])
-  const [totalSymbols, setTotalSymbols]   = useState(0)
-  const [sortKey, setSortKey]             = useState<SortKey>('momentumD')
-  const [sortDir, setSortDir]             = useState<SortDir>('desc')
-  const [loadedCount, setLoadedCount]     = useState(0)
-  const [isRefreshing, setIsRefreshing]   = useState(false)
-  const [extraCols, setExtraCols]         = useState<Set<ExtraCol>>(new Set())
-  const [filters, setFilters]             = useState<Filters>(defaultFilters)
-  const [theme, setTheme]                 = useState<'dark' | 'light'>('dark')
+  const [contracts, setContracts]           = useState<Map<string, ContractData>>(new Map())
+  const [symbols, setSymbols]               = useState<string[]>([])
+  const [totalSymbols, setTotalSymbols]     = useState(0)
+  const [sortKey, setSortKey]               = useState<SortKey>('momentumD')
+  const [sortDir, setSortDir]               = useState<SortDir>('desc')
+  const [loadedCount, setLoadedCount]       = useState(0)
+  const [extraCols, setExtraCols]           = useState<Set<ExtraCol>>(new Set())
+  const [filters, setFilters]               = useState<Filters>(defaultFilters)
+  const [theme, setTheme]                   = useState<'dark' | 'light'>('dark')
   const [pushMissingToBottom, setPushMissingToBottom] = useState(false)
-  const refreshTimer                      = useRef<ReturnType<typeof setInterval> | null>(null)
-  const abortRef                          = useRef<AbortController | null>(null)
+  const [favorites, setFavorites]           = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab]           = useState<'all' | 'favorites'>('all')
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery]       = useState('')
+  const [hideMissing, setHideMissing]       = useState(false)
+  const [isLoading, setIsLoading]           = useState(false)
+  const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
+
+  useEffect(() => {
+    setFavorites(loadFavorites())
+  }, [])
+
+  const toggleFavorite = useCallback((sym: string) => {
+    setFavorites(prev => {
+      const next = new Set(prev)
+      next.has(sym) ? next.delete(sym) : next.add(sym)
+      saveFavorites(next)
+      return next
+    })
+  }, [])
 
   const makeEmpty = (sym: string): ContractData => ({
     symbol: sym,
@@ -48,20 +93,6 @@ export default function Home() {
     spotRatioPct: null, ratioFSPct: null,
     incomplete: false, loading: true,
   })
-
-  useEffect(() => {
-    fetch('/api/symbols')
-      .then(r => r.json())
-      .then(data => {
-        // Add USDT.D to the list
-        const allSymbols = ['USDT.D', ...data.symbols]
-        setSymbols(allSymbols)
-        setTotalSymbols(allSymbols.length)
-        const init = new Map<string, ContractData>()
-        allSymbols.forEach((sym: string) => { init.set(sym, makeEmpty(sym)) })
-        setContracts(init)
-      })
-  }, [])
 
   const recalcPercentiles = useCallback((map: Map<string, ContractData>) => {
     const all = Array.from(map.values()).filter(c => !c.loading)
@@ -79,9 +110,15 @@ export default function Home() {
     return updated
   }, [])
 
-  const loadBatch = useCallback(async (syms: string[], signal?: AbortSignal) => {
+  const loadAll = useCallback(async (syms: string[]) => {
+    abortRef.current?.abort()
+    abortRef.current = new AbortController()
+    const signal = abortRef.current.signal
+    setIsLoading(true)
+    setLoadedCount(0)
+
     for (let i = 0; i < syms.length; i += BATCH_SIZE) {
-      if (signal?.aborted) break
+      if (signal.aborted) break
       const batch = syms.slice(i, i + BATCH_SIZE)
       await Promise.allSettled(
         batch.map(async sym => {
@@ -99,35 +136,23 @@ export default function Home() {
         })
       )
     }
+    setIsLoading(false)
   }, [recalcPercentiles])
 
   useEffect(() => {
-    if (symbols.length === 0) return
-    abortRef.current?.abort()
-    abortRef.current = new AbortController()
-    setLoadedCount(0)
-    loadBatch(symbols, abortRef.current.signal)
-  }, [symbols, loadBatch])
-
-  useEffect(() => {
-    if (symbols.length === 0) return
-    refreshTimer.current = setInterval(async () => {
-      setIsRefreshing(true)
-      abortRef.current?.abort()
-      abortRef.current = new AbortController()
-      await loadBatch(symbols, abortRef.current.signal)
-      setIsRefreshing(false)
-    }, REFRESH_MS)
-    return () => { if (refreshTimer.current) clearInterval(refreshTimer.current) }
-  }, [symbols, loadBatch])
-
-  function toggleExtraCol(col: ExtraCol) {
-    setExtraCols(prev => {
-      const next = new Set(prev)
-      next.has(col) ? next.delete(col) : next.add(col)
-      return next
-    })
-  }
+    fetch('/api/symbols')
+      .then(r => r.json())
+      .then(data => {
+        const filtered = (data.symbols as string[]).filter(s => !EXCLUDED_SYMBOLS.has(s))
+        const allSymbols = ['USDT.D', ...filtered]
+        setSymbols(allSymbols)
+        setTotalSymbols(allSymbols.length)
+        const init = new Map<string, ContractData>()
+        allSymbols.forEach(sym => { init.set(sym, makeEmpty(sym)) })
+        setContracts(init)
+        loadAll(allSymbols)
+      })
+  }, [loadAll])
 
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -135,6 +160,17 @@ export default function Home() {
   }
 
   function applyFiltersCheck(c: ContractData): boolean {
+    if (hideMissing && c.incomplete) return false
+    if (selectedCategory) {
+      const cat = getCategory(c.symbol)
+      if (cat !== selectedCategory) return false
+    }
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase()
+      if (!c.symbol.toLowerCase().includes(q)) return false
+    }
+    if (activeTab === 'favorites' && !favorites.has(c.symbol)) return false
+
     const dLive = c.daily?.live
     const wLive = c.weekly?.live
     const dHist = c.daily?.history ?? []
@@ -143,7 +179,6 @@ export default function Home() {
     const wPrev = wHist.length > 0 ? wHist[wHist.length - 1] : null
     const dScore = c.daily?.score
     const wScore = c.weekly?.score
-
     const md     = dLive !== null && dLive !== undefined ? dLive / 10 : null
     const mw     = wLive !== null && wLive !== undefined ? wLive / 10 : null
     const mdPrev = dPrev !== null && dPrev !== undefined ? dPrev / 10 : null
@@ -161,37 +196,33 @@ export default function Home() {
 
   function getSortedRows(): { pinned: ContractData[]; normal: ContractData[] } {
     const all = Array.from(contracts.values()).filter(c => !c.loading)
-
-    // Separate pinned
     const pinned = PINNED_SYMBOLS
       .map(sym => contracts.get(sym))
       .filter((c): c is ContractData => !!c)
 
-    // Normal rows (exclude pinned, apply filters)
     const normal = all
       .filter(c => !PINNED_SYMBOLS.includes(c.symbol) && applyFiltersCheck(c))
       .sort((a, b) => {
-        // Push missing to bottom if toggle is on
         if (pushMissingToBottom) {
           if (a.incomplete && !b.incomplete) return 1
           if (!a.incomplete && b.incomplete) return -1
         }
         let va: number | string = 0, vb: number | string = 0
-        if (sortKey === 'symbol')    { va = a.symbol;              vb = b.symbol }
-        if (sortKey === 'momentumD') { va = a.daily?.score  ?? -1; vb = b.daily?.score  ?? -1 }
-        if (sortKey === 'momentumW') { va = a.weekly?.score ?? -1; vb = b.weekly?.score ?? -1 }
-        if (sortKey === 'vol24h')    { va = a.vol24h ?? 0;         vb = b.vol24h ?? 0 }
-        if (sortKey === 'spotRatio') { va = a.spotRatio ?? -1;     vb = b.spotRatio ?? -1 }
-        if (sortKey === 'ratioFS')   { va = a.ratioFS ?? 999999;   vb = b.ratioFS ?? 999999 }
+        if (sortKey === 'symbol')    { va = a.symbol;                    vb = b.symbol }
+        if (sortKey === 'momentumD') { va = a.daily?.score     ?? -1;    vb = b.daily?.score     ?? -1 }
+        if (sortKey === 'momentumW') { va = a.weekly?.score    ?? -1;    vb = b.weekly?.score    ?? -1 }
+        if (sortKey === 'vol24h')    { va = a.vol24h           ?? 0;     vb = b.vol24h           ?? 0 }
+        if (sortKey === 'spotRatio') { va = a.spotRatio        ?? -1;    vb = b.spotRatio        ?? -1 }
+        if (sortKey === 'ratioFS')   { va = a.ratioFS          ?? 999999;vb = b.ratioFS          ?? 999999 }
+        if (sortKey === 'volSpot')   { va = a.volSpot          ?? 0;     vb = b.volSpot          ?? 0 }
         if (typeof va === 'string') return sortDir === 'asc' ? va.localeCompare(vb as string) : (vb as string).localeCompare(va)
         return sortDir === 'asc' ? (va as number) - (vb as number) : (vb as number) - (va as number)
       })
-
     return { pinned, normal }
   }
 
   const { pinned, normal } = getSortedRows()
-  const allLoaded = loadedCount >= totalSymbols && totalSymbols > 0
+  const allLoaded = !isLoading && loadedCount >= totalSymbols && totalSymbols > 0
   const pct = totalSymbols > 0 ? Math.round((loadedCount / totalSymbols) * 100) : 0
 
   const showMomDPrev  = extraCols.has('momentumDPrev')
@@ -206,6 +237,8 @@ export default function Home() {
   const colCount = 4 + extraCount
   const gridCols = `2fr repeat(${colCount - 1}, 1fr)`
 
+  const headerBg = theme === 'dark' ? '#060910' : '#f0faf4'
+
   function ColBtn({ col, label, align }: { col: SortKey; label: string; align?: string }) {
     const active = sortKey === col
     return (
@@ -213,21 +246,11 @@ export default function Home() {
         background: 'none', border: 'none',
         color: active ? 'var(--accent)' : 'var(--text-dim)',
         fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
-        fontFamily: 'Syne, sans-serif', fontWeight: 500, cursor: 'pointer',
+        fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 500, cursor: 'pointer',
         display: 'flex', alignItems: 'center',
         justifyContent: align === 'left' ? 'flex-start' : 'center',
         gap: 4, padding: '10px 12px', width: '100%',
-        transition: 'color 0.2s, background 0.2s',
-      }}
-      onMouseEnter={e => {
-        const el = e.currentTarget as HTMLButtonElement
-        el.style.color = 'var(--accent)'
-        el.style.background = theme === 'dark' ? '#0a1428' : '#eef8f2'
-      }}
-      onMouseLeave={e => {
-        const el = e.currentTarget as HTMLButtonElement
-        el.style.color = active ? 'var(--accent)' : 'var(--text-dim)'
-        el.style.background = 'none'
+        transition: 'color 0.2s',
       }}>
         {label}
         {col === 'symbol' && (
@@ -242,128 +265,296 @@ export default function Home() {
 
   function SimpleHdr({ label }: { label: string }) {
     return (
-      <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'Syne, sans-serif', fontWeight: 500, padding: '10px 12px', textAlign: 'center' }}>
+      <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 500, padding: '10px 12px', textAlign: 'center' }}>
         {label}
       </div>
     )
   }
 
-  const headerBg = theme === 'dark' ? '#060910' : '#f0faf4'
-
   return (
-    <main style={{ position: 'relative', zIndex: 1, padding: '24px 16px', maxWidth: 1400, margin: '0 auto' }}>
+    <main style={{ position: 'relative', zIndex: 1, padding: '24px 16px', maxWidth: 1500, margin: '0 auto' }}>
 
-      <div style={{ textAlign: 'center', padding: '28px 0 24px', position: 'relative' }}>
+      {/* Header */}
+      <div style={{ textAlign: 'center', padding: '28px 0 20px', position: 'relative' }}>
         <button
           onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
           style={{ position: 'absolute', top: 28, right: 0, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 15, transition: 'all 0.2s' }}
-          onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)'}
-          onMouseLeave={e => (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'}
-        >
-          {theme === 'dark' ? '☀️' : '🌙'}
-        </button>
-        <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: 'Syne, sans-serif' }}>Dipology Capital</h1>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, textTransform: 'lowercase', fontWeight: 300 }}>
+        >{theme === 'dark' ? '☀️' : '🌙'}</button>
+
+        <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: "'Dodger', 'Syne', sans-serif" }}>
+          Dipology Screener
+        </h1>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, textTransform: 'lowercase' }}>
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green-live)', display: 'inline-block', animation: 'livePulse 1.8s infinite' }} />
-          live
+          binance futures usdt perpétuel · momentum = rsi ÷ 10
         </div>
       </div>
 
-      {!allLoaded && totalSymbols > 0 && (
+      {/* Pinned cards - BTC + USDT.D above table */}
+      {pinned.length > 0 && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+          {pinned.map(row => (
+            <PinnedCard key={row.symbol} data={row} theme={theme} favorite={favorites.has(row.symbol)} onFav={() => toggleFavorite(row.symbol)} />
+          ))}
+        </div>
+      )}
+
+      {/* Progress bar */}
+      {isLoading && totalSymbols > 0 && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ height: 2, background: 'var(--border)', borderRadius: 1, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', transition: 'width 0.3s ease', borderRadius: 1 }} />
           </div>
-          <div style={{ textAlign: 'right', fontSize: 10, color: 'var(--text-dim)', marginTop: 4, letterSpacing: 1 }}>
-            {loadedCount} / {totalSymbols} contrats chargés
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+            <span style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: 1 }}>{loadedCount} / {totalSymbols} contrats chargés</span>
+            <span style={{ fontSize: 10, color: 'var(--text-dim)', letterSpacing: 1 }}>{pct}%</span>
           </div>
         </div>
       )}
 
-      {isRefreshing && allLoaded && (
-        <div style={{ textAlign: 'right', fontSize: 10, color: 'var(--text-dim)', marginBottom: 8, letterSpacing: 1 }}>↻ mise à jour…</div>
-      )}
+      {/* Tabs: All / Favorites */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+        {(['all', 'favorites'] as const).map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)} style={{
+            padding: '5px 14px', borderRadius: 20,
+            background: activeTab === tab ? 'var(--accent)' : 'var(--bg-panel)',
+            border: `1px solid ${activeTab === tab ? 'var(--accent)' : 'var(--border)'}`,
+            color: activeTab === tab ? '#000' : 'var(--text-muted)',
+            fontSize: 11, letterSpacing: 1, cursor: 'pointer',
+            fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 600,
+            transition: 'all 0.2s',
+          }}>
+            {tab === 'all' ? 'Tous' : '★ Favoris'}
+          </button>
+        ))}
 
-      <FilterBar filters={filters} onChange={setFilters} activeCount={normal.length} totalCount={normal.length + pinned.length} />
+        {/* Categories */}
+        {ALL_CATEGORIES.map(cat => (
+          <button key={cat} onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)} style={{
+            padding: '4px 11px', borderRadius: 20,
+            background: selectedCategory === cat ? 'rgba(0,229,255,0.15)' : 'var(--bg-panel)',
+            border: `1px solid ${selectedCategory === cat ? 'var(--accent)' : 'var(--border)'}`,
+            color: selectedCategory === cat ? 'var(--accent)' : 'var(--text-dim)',
+            fontSize: 10, letterSpacing: 1, cursor: 'pointer',
+            fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 600,
+            transition: 'all 0.2s',
+          }}>{cat}</button>
+        ))}
 
+        {/* Hide missing */}
+        <button onClick={() => setHideMissing(p => !p)} style={{
+          padding: '4px 11px', borderRadius: 20,
+          background: hideMissing ? 'rgba(255,159,67,0.15)' : 'var(--bg-panel)',
+          border: `1px solid ${hideMissing ? '#ff9f43' : 'var(--border)'}`,
+          color: hideMissing ? '#ff9f43' : 'var(--text-dim)',
+          fontSize: 10, letterSpacing: 1, cursor: 'pointer',
+          fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 600,
+        }}>Missing data ✕</button>
+
+        {/* Search */}
+        <input
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Rechercher..."
+          style={{
+            marginLeft: 'auto', padding: '5px 12px',
+            background: 'var(--bg-panel)', border: '1px solid var(--border)',
+            borderRadius: 6, color: 'var(--text-primary)',
+            fontFamily: "'Space Mono', monospace", fontSize: 11,
+            outline: 'none', width: 160,
+          }}
+        />
+
+        {/* Refresh button */}
+        <button
+          onClick={() => loadAll(symbols)}
+          disabled={isLoading}
+          style={{
+            padding: '5px 14px', borderRadius: 6,
+            background: isLoading ? 'var(--border)' : 'var(--accent)',
+            border: 'none', color: isLoading ? 'var(--text-muted)' : '#000',
+            fontSize: 11, letterSpacing: 1, cursor: isLoading ? 'not-allowed' : 'pointer',
+            fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 700,
+            transition: 'all 0.2s',
+          }}
+        >{isLoading ? '↻ ...' : '↻ Refresh'}</button>
+      </div>
+
+      {/* FilterBar */}
+      <FilterBar filters={filters} onChange={setFilters} activeCount={normal.length} totalCount={normal.length} />
+
+      {/* Table */}
       <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
-
-        {/* Header */}
-        <div style={{ display: 'grid', gridTemplateColumns: gridCols, background: headerBg, borderBottom: '1px solid var(--border)' }}>
+        {/* Sticky header */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: gridCols,
+          background: headerBg, borderBottom: '1px solid var(--border)',
+          position: 'sticky', top: 0, zIndex: 20,
+        }}>
           <ColBtn col="symbol"    label="Contrat"    align="left" />
-          <ColBtn col="momentumD" label="Momentum D" />
-          <ColBtn col="momentumW" label="Momentum W" />
-          <ColBtn col="vol24h"    label="Vol 24H" />
+          <ColBtn col="momentumD" label="Mom D" />
+          <ColBtn col="momentumW" label="Mom W" />
+          <ColBtn col="vol24h"    label="F Vol 24H" />
+          {showVolSpot   && <ColBtn col="volSpot"   label="S Vol 24H" />}
           {showMomDPrev  && <SimpleHdr label="Mom D-1" />}
           {showMomWPrev  && <SimpleHdr label="Mom W-1" />}
           {showScoreD    && <SimpleHdr label="Score D" />}
           {showScoreW    && <SimpleHdr label="Score W" />}
-          {showSpotRatio && <ColBtn col="spotRatio" label="Spot Ratio" />}
+          {showSpotRatio && <ColBtn col="spotRatio" label="Turn-over" />}
           {showRatioFS   && <ColBtn col="ratioFS"   label="Ratio F/S" />}
-          {showVolSpot   && <SimpleHdr label="Vol Spot" />}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '8px' }}>
-            {/* Toggle missing to bottom */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px' }}>
             <button
               onClick={() => setPushMissingToBottom(p => !p)}
-              title={pushMissingToBottom ? 'Données manquantes : repoussées en bas' : 'Données manquantes : dans le classement normal'}
+              title="Repousser données manquantes en bas"
               style={{
                 background: pushMissingToBottom ? 'rgba(255,159,67,0.15)' : 'none',
                 border: `1px solid ${pushMissingToBottom ? '#ff9f43' : 'var(--border)'}`,
                 color: pushMissingToBottom ? '#ff9f43' : 'var(--text-dim)',
                 borderRadius: 4, padding: '2px 7px', cursor: 'pointer',
-                fontSize: 10, fontFamily: 'Syne, sans-serif', letterSpacing: 1,
-                transition: 'all 0.2s',
+                fontSize: 10, fontFamily: "'Dodger', 'Syne', sans-serif",
               }}
             >↓?</button>
-            <ColumnPicker active={extraCols} onToggle={toggleExtraCol} />
+            <ColumnPicker active={extraCols} onToggle={col => {
+              setExtraCols(prev => {
+                const next = new Set(prev)
+                next.has(col) ? next.delete(col) : next.add(col)
+                return next
+              })
+            }} />
           </div>
         </div>
 
-        {/* Pinned rows - BTC + USDT.D always visible and expanded */}
-        {pinned.map((row, i) => (
-          <ScreenerRow
-            key={row.symbol}
-            data={row}
-            index={i}
-            extraCols={extraCols}
-            gridCols={gridCols}
-            forceOpen={true}
-            isPinned={true}
-          />
-        ))}
-
-        {/* Separator */}
-        {pinned.length > 0 && (
-          <div style={{ height: 2, background: 'var(--border)', opacity: 0.5 }} />
-        )}
-
         {/* Normal rows */}
-        {normal.length === 0 && allLoaded && (
-          <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>
-            aucun résultat
-          </div>
-        )}
-        {!allLoaded && normal.length === 0 && (
-          <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>
-            chargement…
-          </div>
-        )}
-        {normal.map((row, i) => (
-          <ScreenerRow
-            key={row.symbol}
-            data={row}
-            index={i + pinned.length}
-            extraCols={extraCols}
-            gridCols={gridCols}
-            forceOpen={false}
-            isPinned={false}
-          />
-        ))}
-      </div>
-
-      <div style={{ textAlign: 'center', marginTop: 24, fontSize: 10, color: 'var(--text-dim)', letterSpacing: 2, fontWeight: 300 }}>
-        données binance futures · usdt perpétuel · momentum = rsi ÷ 10
+        <div style={{ maxHeight: 'calc(100vh - 420px)', overflowY: 'auto' }}>
+          {normal.length === 0 && allLoaded && (
+            <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>
+              aucun résultat
+            </div>
+          )}
+          {normal.map((row, i) => (
+            <ScreenerRow
+              key={row.symbol}
+              data={row}
+              index={i}
+              extraCols={extraCols}
+              gridCols={gridCols}
+              forceOpen={false}
+              isPinned={false}
+              isFavorite={favorites.has(row.symbol)}
+              onToggleFavorite={() => toggleFavorite(row.symbol)}
+            />
+          ))}
+        </div>
       </div>
     </main>
+  )
+}
+
+// ── Pinned card component ─────────────────────────────────────────────────────
+function PinnedCard({ data, theme, favorite, onFav }: {
+  data: ContractData
+  theme: string
+  favorite: boolean
+  onFav: () => void
+}) {
+  const isBTC  = data.symbol === 'BTCUSDT'
+  const isUSDT = data.symbol === 'USDT.D'
+  const accentColor = isBTC ? 'var(--accent)' : '#ff9f43'
+  const base = isBTC ? 'BTC' : 'USDT.D'
+
+  const dLive  = data.daily?.live
+  const wLive  = data.weekly?.live
+  const dHist  = data.daily?.history ?? []
+  const wHist  = data.weekly?.history ?? []
+  const dScore = data.daily?.score
+  const wScore = data.weekly?.score
+
+  function fmtMom(v: number | null | undefined) {
+    if (v === null || v === undefined) return '—'
+    return (v / 10).toFixed(2)
+  }
+
+  function momColor(v: number | null | undefined) {
+    if (v === null || v === undefined) return 'var(--text-dim)'
+    const m = v / 10
+    if (m >= 6) return '#00e676'
+    if (m >= 5) return '#69f0ae'
+    if (m >= 4) return '#fff176'
+    if (m >= 3) return '#ffb74d'
+    return '#ef5350'
+  }
+
+  // Mini heatmap cells
+  const dCells = [...Array(9).fill(null).map((_, i) => dHist[dHist.length - 9 + i] ?? null), dLive ?? null]
+  const wCells = [...Array(9).fill(null).map((_, i) => wHist[wHist.length - 9 + i] ?? null), wLive ?? null]
+
+  function cellColor(v: number | null) {
+    if (v === null) return theme === 'dark' ? '#0a0f1e' : '#f0f4f0'
+    if (v >= 70) return '#1d8848'
+    if (v >= 60) return '#3aaa64'
+    if (v >= 50) return '#6abf8a'
+    if (v >= 40) return '#96c896'
+    if (v >= 30) return '#c89696'
+    if (v >= 20) return '#c86464'
+    return '#a83232'
+  }
+
+  const sentiment = isUSDT && dLive !== null && dLive !== undefined
+    ? dLive / 10 < 4
+      ? { text: '✓ Bull Signal', color: '#00e676' }
+      : dLive / 10 > 6
+      ? { text: '⚠ Bear Signal', color: '#ef5350' }
+      : { text: '~ Neutre', color: '#fff176' }
+    : null
+
+  return (
+    <div style={{
+      background: 'var(--bg-panel)',
+      border: `1px solid var(--border)`,
+      borderLeft: `3px solid ${accentColor}`,
+      borderRadius: 12, padding: '16px 20px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <span style={{ color: accentColor, fontSize: 11 }}>{isBTC ? '★' : '◆'}</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Space Mono', monospace" }}>{base}</span>
+        {!isBTC && <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 1 }}>dominance</span>}
+        {sentiment && (
+          <span style={{ fontSize: 10, color: sentiment.color, fontWeight: 600, marginLeft: 4, letterSpacing: 1 }}>{sentiment.text}</span>
+        )}
+        <button onClick={onFav} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: favorite ? '#f0a020' : 'var(--text-dim)' }}>
+          {favorite ? '★' : '☆'}
+        </button>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+        {[
+          { label: 'Mom Daily', val: fmtMom(dLive), color: momColor(dLive) },
+          { label: 'Mom Weekly', val: fmtMom(wLive), color: momColor(wLive) },
+          { label: 'Score D', val: dScore !== null && dScore !== undefined ? dScore.toFixed(1) + '%' : '—', color: 'var(--text-muted)' },
+        ].map(m => (
+          <div key={m.label} style={{ background: theme === 'dark' ? '#0a0f1e' : '#f5f9f5', borderRadius: 6, padding: '6px 10px' }}>
+            <div style={{ fontSize: 8, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 3 }}>{m.label}</div>
+            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 15, fontWeight: 700, color: m.color }}>{m.val}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>
+      {[{ label: 'D', cells: dCells, score: dScore }, { label: 'W', cells: wCells, score: wScore }].map(row => (
+        <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'center', marginBottom: 4 }}>
+          <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace" }}>{row.label}</span>
+          {row.cells.slice(0, 9).map((v, i) => (
+            <div key={i} style={{ flex: 1, height: 18, borderRadius: 2, background: cellColor(v) }} title={v !== null ? v.toFixed(1) : '—'} />
+          ))}
+          <div style={{ width: 4, flexShrink: 0 }} />
+          <div style={{ flex: 1, height: 18, borderRadius: 2, background: cellColor(row.cells[9] ?? null), border: `1px solid ${accentColor}66` }} />
+          <div style={{ flex: 1.5, height: 18, borderRadius: 2, background: theme === 'dark' ? '#0a0f1e' : '#f0f4f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700, color: accentColor }}>
+              {row.score !== null && row.score !== undefined ? row.score.toFixed(1) + '%' : '—'}
+            </span>
+          </div>
+        </div>
+      ))}
+    </div>
   )
 }

@@ -12,9 +12,7 @@
   font-display: swap;
 }
 
-/* ══════════════════════════════════════
-   MODE SOMBRE (défaut)
-══════════════════════════════════════ */
+/* ══ DARK MODE (default) ═══════════════════════════════════════════ */
 :root {
   --bg-deep:      #020a04;
   --bg-panel:     #040d06;
@@ -35,25 +33,23 @@
   --warn-border:  #ff6b0033;
 }
 
-/* ══════════════════════════════════════
-   MODE CLAIR
-══════════════════════════════════════ */
+/* ══ LIGHT MODE ═════════════════════════════════════════════════════ */
 [data-theme="light"] {
-  --bg-deep:      #f4faf6;
+  --bg-deep:      #f6f9f6;
   --bg-panel:     #ffffff;
-  --bg-row:       #f9fdfb;
-  --bg-row-hover: #eef8f2;
-  --bg-heatmap:   #f0faf4;
-  --border:       #c2e0cc;
-  --border-glow:  #00aa3322;
-  --accent:       #007a22;
-  --accent-dim:   #007a2244;
-  --accent-faint: #007a2211;
-  --green-live:   #00aa44;
-  --text-primary: #0a2414;
-  --text-muted:   #2d6b42;
-  --text-dim:     #8aaa96;
-  --warn:         #c4700a;
+  --bg-row:       #fafcfa;
+  --bg-row-hover: #eef6f0;
+  --bg-heatmap:   #f2f8f3;
+  --border:       #ddeedd;       /* très léger — lignes de séparation discrètes */
+  --border-glow:  #00882222;
+  --accent:       #006622;       /* vert forêt profond — lisible */
+  --accent-dim:   #00662244;
+  --accent-faint: #00662211;
+  --green-live:   #008833;
+  --text-primary: #0d1f12;       /* presque noir — très lisible */
+  --text-muted:   #336644;       /* vert sombre — lisible */
+  --text-dim:     #88aa99;       /* gris-vert clair — secondaire */
+  --warn:         #c06010;
   --warn-bg:      #ff6b0010;
   --warn-border:  #ff6b0030;
 }
@@ -69,13 +65,12 @@ html, body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg-deep); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 
-/* Fond étoilé — mode sombre seulement */
-:root body::before {
+/* Dark mode stars */
+body::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -89,33 +84,12 @@ html, body {
     radial-gradient(1px 1px at 90% 5%,  #00ff4412 0%, transparent 100%),
     radial-gradient(1px 1px at 5%  85%, #00ff4410 0%, transparent 100%),
     radial-gradient(1px 1px at 60% 90%, #00ff4414 0%, transparent 100%),
-    radial-gradient(1px 1px at 30% 70%, #00ff4410 0%, transparent 100%),
-    radial-gradient(1px 1px at 75% 50%, #00ff4412 0%, transparent 100%),
-    radial-gradient(1px 1px at 45% 80%, #00ff4410 0%, transparent 100%),
-    radial-gradient(1px 1px at 80% 35%, #00ff4408 0%, transparent 100%),
-    radial-gradient(1px 1px at 95% 55%, #00ff4412 0%, transparent 100%);
+    radial-gradient(1px 1px at 30% 70%, #00ff4410 0%, transparent 100%);
   pointer-events: none;
   z-index: 0;
 }
 
 [data-theme="light"] body::before { display: none; }
-
-body::after {
-  content: '';
-  position: fixed;
-  top: -30%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80%;
-  height: 60%;
-  background: radial-gradient(ellipse, #00ff4408 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
-
-[data-theme="light"] body::after {
-  background: radial-gradient(ellipse, #00aa3306 0%, transparent 70%);
-}
 
 @keyframes livePulse {
   0%, 100% { opacity: 1; transform: scale(1); }
