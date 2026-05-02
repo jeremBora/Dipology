@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import ScreenerRow, { ContractData } from '@/components/ScreenerRow'
 import ColumnPicker, { ExtraCol } from '@/components/ColumnPicker'
 import FilterBar, { Filters, defaultFilters, applyVolFilter } from '@/components/FilterBar'
-import { getCategory, ALL_CATEGORIES } from '@/lib/categories'
+import { getCategory } from '@/lib/categories'
+import CategoryPicker from '@/components/CategoryPicker'
 
 type SortKey = 'symbol' | 'momentumD' | 'momentumW' | 'vol24h' | 'spotRatio' | 'ratioFS' | 'volSpot'
 type SortDir = 'asc' | 'desc'
@@ -328,18 +329,7 @@ export default function Home() {
           </button>
         ))}
 
-        {/* Categories */}
-        {ALL_CATEGORIES.map(cat => (
-          <button key={cat} onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)} style={{
-            padding: '4px 11px', borderRadius: 20,
-            background: selectedCategory === cat ? 'rgba(0,229,255,0.15)' : 'var(--bg-panel)',
-            border: `1px solid ${selectedCategory === cat ? 'var(--accent)' : 'var(--border)'}`,
-            color: selectedCategory === cat ? 'var(--accent)' : 'var(--text-dim)',
-            fontSize: 10, letterSpacing: 1, cursor: 'pointer',
-            fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 600,
-            transition: 'all 0.2s',
-          }}>{cat}</button>
-        ))}
+        <CategoryPicker selected={selectedCategory} onSelect={setSelectedCategory} contracts={contracts} />
 
         {/* Hide missing */}
         <button onClick={() => setHideMissing(p => !p)} style={{

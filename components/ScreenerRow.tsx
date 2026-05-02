@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { ExtraCol } from './ColumnPicker'
 import { rsiTextColor } from '@/lib/rsi'
-import { getCategory } from '@/lib/categories'
 
 const HeatmapRow = require('./HeatmapRow').default as (props: {
   label: string
@@ -60,20 +59,6 @@ function percentileColor(pct: number): string {
   return '#ef5350'
 }
 
-const CAT_COLORS: Record<string, { bg: string; color: string }> = {
-  L1:     { bg: 'rgba(0,150,255,0.15)', color: '#60b0ff' },
-  L2:     { bg: 'rgba(0,200,200,0.15)', color: '#40d0d0' },
-  DeFi:   { bg: 'rgba(150,0,255,0.15)', color: '#c080ff' },
-  AI:     { bg: 'rgba(0,255,150,0.15)', color: '#00d880' },
-  Meme:   { bg: 'rgba(255,80,150,0.15)', color: '#ff80b0' },
-  RWA:    { bg: 'rgba(255,200,0,0.15)', color: '#ffc040' },
-  Gaming: { bg: 'rgba(255,120,0,0.15)', color: '#ff8040' },
-  Infra:  { bg: 'rgba(100,200,255,0.15)', color: '#60c8ff' },
-  Privacy:{ bg: 'rgba(150,150,150,0.15)', color: '#a0a0a0' },
-  CEX:    { bg: 'rgba(255,180,0,0.15)', color: '#ffb020' },
-  LST:    { bg: 'rgba(0,180,120,0.15)', color: '#00c080' },
-  Social: { bg: 'rgba(255,100,200,0.15)', color: '#ff80d0' },
-}
 
 export default function ScreenerRow({
   data, index, extraCols, gridCols, forceOpen, isPinned, isFavorite, onToggleFavorite
@@ -111,8 +96,6 @@ export default function ScreenerRow({
   const showVolSpot   = extraCols.has('volSpot' as ExtraCol)
 
   const dim = { color: 'var(--text-dim)', fontSize: 11, fontFamily: "'Space Mono', monospace" }
-  const cat = getCategory(data.symbol)
-  const catStyle = cat ? CAT_COLORS[cat] : null
 
   return (
     <div
@@ -146,10 +129,6 @@ export default function ScreenerRow({
 
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 0.5, fontFamily: "'Space Mono', monospace" }}>{base}</span>
           <span style={{ fontSize: 9, fontWeight: 300, color: 'var(--text-muted)', letterSpacing: 1, textTransform: 'lowercase' }}>/usdt</span>
-
-          {catStyle && cat && (
-            <span style={{ fontSize: 8, background: catStyle.bg, color: catStyle.color, borderRadius: 3, padding: '1px 5px', letterSpacing: 0.5, fontWeight: 600, flexShrink: 0 }}>{cat}</span>
-          )}
 
           {data.incomplete && (
             <span style={{ fontSize: 8, background: 'var(--warn-bg)', color: 'var(--warn)', border: '1px solid var(--warn-border)', padding: '1px 5px', borderRadius: 3, letterSpacing: 0.5, flexShrink: 0 }}>!</span>
