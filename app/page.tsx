@@ -276,7 +276,7 @@ export default function Home() {
     <main style={{ position: 'relative', zIndex: 1, padding: '24px 16px', maxWidth: 1500, margin: '0 auto' }}>
 
       {/* Header */}
-      <div style={{ textAlign: 'center', padding: '28px 0 20px', position: 'relative' }}>
+      <div style={{ textAlign: 'center', padding: '28px 0 32px', position: 'relative' }}>
         <button
           onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
           style={{ position: 'absolute', top: 28, right: 0, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 15, transition: 'all 0.2s' }}
@@ -287,13 +287,13 @@ export default function Home() {
         </h1>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, textTransform: 'lowercase' }}>
           <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--green-live)', display: 'inline-block', animation: 'livePulse 1.8s infinite' }} />
-          binance futures usdt perpétuel · momentum = rsi ÷ 10
+          live
         </div>
       </div>
 
       {/* Pinned cards - BTC + USDT.D above table */}
       {pinned.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
           {pinned.map(row => (
             <PinnedCard key={row.symbol} data={row} theme={theme} favorite={favorites.has(row.symbol)} onFav={() => toggleFavorite(row.symbol)} />
           ))}
@@ -489,13 +489,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
     return '#a83232'
   }
 
-  const sentiment = isUSDT && dLive !== null && dLive !== undefined
-    ? dLive / 10 < 4
-      ? { text: '✓ Bull Signal', color: '#00e676' }
-      : dLive / 10 > 6
-      ? { text: '⚠ Bear Signal', color: '#ef5350' }
-      : { text: '~ Neutre', color: '#fff176' }
-    : null
+  const sentiment = null // removed Bull/Bear signal
 
   return (
     <div style={{
@@ -508,20 +502,20 @@ function PinnedCard({ data, theme, favorite, onFav }: {
         <span style={{ color: accentColor, fontSize: 11 }}>{isBTC ? '★' : '◆'}</span>
         <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Space Mono', monospace" }}>{base}</span>
         {!isBTC && <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 1 }}>dominance</span>}
-        {sentiment && (
-          <span style={{ fontSize: 10, color: sentiment.color, fontWeight: 600, marginLeft: 4, letterSpacing: 1 }}>{sentiment.text}</span>
-        )}
+
         <button onClick={onFav} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: favorite ? '#f0a020' : 'var(--text-dim)' }}>
           {favorite ? '★' : '☆'}
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
-        {[
+      <div style={{ display: 'grid', gridTemplateColumns: isUSDT ? '1fr' : '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+        {(isUSDT ? [
+          { label: 'Dominance USDT actuelle', val: data.dominance !== undefined && data.dominance > 0 ? data.dominance.toFixed(2) + '%' : '—', color: '#ff9f43' },
+        ] : [
           { label: 'Mom Daily', val: fmtMom(dLive), color: momColor(dLive) },
           { label: 'Mom Weekly', val: fmtMom(wLive), color: momColor(wLive) },
           { label: 'Score D', val: dScore !== null && dScore !== undefined ? dScore.toFixed(1) + '%' : '—', color: 'var(--text-muted)' },
-        ].map(m => (
+        ]).map(m => (
           <div key={m.label} style={{ background: theme === 'dark' ? '#0a0f1e' : '#f5f9f5', borderRadius: 6, padding: '6px 10px' }}>
             <div style={{ fontSize: 8, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 3 }}>{m.label}</div>
             <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 15, fontWeight: 700, color: m.color }}>{m.val}</div>
@@ -529,8 +523,8 @@ function PinnedCard({ data, theme, favorite, onFav }: {
         ))}
       </div>
 
-      <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>
-      {[{ label: 'D', cells: dCells, score: dScore }, { label: 'W', cells: wCells, score: wScore }].map(row => (
+      {!isUSDT && <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>}
+      {!isUSDT && [{ label: 'D', cells: dCells, score: dScore }, { label: 'W', cells: wCells, score: wScore }].map(row => (
         <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'center', marginBottom: 4 }}>
           <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace" }}>{row.label}</span>
           {row.cells.slice(0, 9).map((v, i) => (
@@ -548,4 +542,3 @@ function PinnedCard({ data, theme, favorite, onFav }: {
     </div>
   )
 }
-

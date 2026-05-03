@@ -20,7 +20,6 @@
   --bg-row-hover: #071409;
   --bg-heatmap:   #030805;
   --border:       #0a2010;
-  --border-glow:  #00ff4422;
   --accent:       #00ff44;
   --accent-dim:   #00ff4444;
   --accent-faint: #00ff4411;
@@ -31,6 +30,10 @@
   --warn:         #ff9f43;
   --warn-bg:      #ff6b0012;
   --warn-border:  #ff6b0033;
+  /* Chiffres harmonisés dark */
+  --num-green:    #00e676;
+  --num-red:      #ff5252;
+  --num-neutral:  #4a9060;
 }
 
 /* ══ LIGHT MODE ═════════════════════════════════════════════════════ */
@@ -40,18 +43,21 @@
   --bg-row:       #fafcfa;
   --bg-row-hover: #eef6f0;
   --bg-heatmap:   #f2f8f3;
-  --border:       #ddeedd;       /* très léger — lignes de séparation discrètes */
-  --border-glow:  #00882222;
-  --accent:       #006622;       /* vert forêt profond — lisible */
+  --border:       #ddeedd;
+  --accent:       #006622;
   --accent-dim:   #00662244;
   --accent-faint: #00662211;
   --green-live:   #008833;
-  --text-primary: #0d1f12;       /* presque noir — très lisible */
-  --text-muted:   #336644;       /* vert sombre — lisible */
-  --text-dim:     #88aa99;       /* gris-vert clair — secondaire */
+  --text-primary: #0d1f12;
+  --text-muted:   #336644;
+  --text-dim:     #88aa99;
   --warn:         #c06010;
   --warn-bg:      #ff6b0010;
   --warn-border:  #ff6b0030;
+  /* Chiffres harmonisés light — plus foncés et lisibles */
+  --num-green:    #1a6b35;
+  --num-red:      #b01c1c;
+  --num-neutral:  #336644;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -69,7 +75,6 @@ html, body {
 ::-webkit-scrollbar-track { background: var(--bg-deep); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
-/* Dark mode stars */
 body::before {
   content: '';
   position: fixed;

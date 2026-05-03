@@ -7,7 +7,7 @@ const FUTURES = 'https://fapi.binance.com'
 const SPOT    = 'https://api.binance.com'
 
 const HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   'Accept': 'application/json',
 }
 
@@ -40,70 +40,18 @@ async function fetchSpotVol(symbol: string): Promise<number | null> {
   } catch { return null }
 }
 
-// ── USDT Dominance via CoinGecko ─────────────────────────────────────────────
-// Calculates USDT.D = USDT market cap / total crypto market cap
-// Returns daily closes of dominance percentage over 90 days
-async function fetchUsdtDominanceCloses(): Promise<{ daily: number[]; weekly: number[] }> {
+// USDT Dominance — just current value from CoinGecko global
+async function fetchUsdtDominance(): Promise<{ dominance: number; change7d: number | null }> {
   try {
-    // Fetch USDT market cap history (90 days = daily data)
-    const [usdtRes, globalRes] = await Promise.all([
-      fetch('https://api.coingecko.com/api/v3/coins/tether/market_chart?vs_currency=usd&days=90&interval=daily', {
-        next: { revalidate: 3600 }
-      }),
-      fetch('https://api.coingecko.com/api/v3/global', {
-        next: { revalidate: 3600 }
-      })
-    ])
-
-    if (!usdtRes.ok || !globalRes.ok) throw new Error('CoinGecko error')
-
-    const usdtData = await usdtRes.json()
-    const globalData = await globalRes.json()
-
-    // Get total market cap history (also 90 days)
-    const totalRes = await fetch(
-      'https://api.coingecko.com/api/v3/global/market_cap_chart?days=90',
-      { next: { revalidate: 3600 } }
-    )
-
-    let dominanceCloses: number[] = []
-
-    if (totalRes.ok) {
-      const totalData = await totalRes.json()
-      const usdtMcaps: [number, number][] = usdtData.market_caps || []
-      const totalMcaps: [number, number][] = totalData.market_cap_chart?.market_cap || []
-
-      // Align by index (both should be same length ~90)
-      const minLen = Math.min(usdtMcaps.length, totalMcaps.length)
-      for (let i = 0; i < minLen; i++) {
-        const usdtMc = usdtMcaps[i][1]
-        const totalMc = totalMcaps[i][1]
-        if (totalMc > 0) {
-          dominanceCloses.push((usdtMc / totalMc) * 100)
-        }
-      }
-    } else {
-      // Fallback: use CoinGecko global dominance for current + estimate history from USDT mcap trend
-      const currentDominance = globalData.data?.market_cap_percentage?.usdt || 5
-      const usdtMcaps: [number, number][] = usdtData.market_caps || []
-      // Approximate dominance using ratio to current known value
-      const currentUsdtMc = usdtMcaps[usdtMcaps.length - 1]?.[1] || 1
-      dominanceCloses = usdtMcaps.map(([, mc]) => (mc / currentUsdtMc) * currentDominance)
-    }
-
-    // Build weekly from daily (take every 7th point)
-    const weeklyCloses: number[] = []
-    for (let i = 0; i < dominanceCloses.length; i += 7) {
-      weeklyCloses.push(dominanceCloses[i])
-    }
-    // Add last value as "live"
-    if (dominanceCloses.length > 0) {
-      weeklyCloses.push(dominanceCloses[dominanceCloses.length - 1])
-    }
-
-    return { daily: dominanceCloses, weekly: weeklyCloses }
+    const res = await fetch('https://api.coingecko.com/api/v3/global', {
+      next: { revalidate: 1800 }
+    })
+    if (!res.ok) throw new Error('CoinGecko error')
+    const data = await res.json()
+    const dominance = data.data?.market_cap_percentage?.usdt ?? 0
+    return { dominance, change7d: null }
   } catch {
-    return { daily: [], weekly: [] }
+    return { dominance: 0, change7d: null }
   }
 }
 
@@ -111,24 +59,23 @@ export async function GET(req: NextRequest) {
   const symbol = req.nextUrl.searchParams.get('symbol')
   if (!symbol) return Response.json({ error: 'symbol required' }, { status: 400 })
 
-  // Special case: USDT Dominance
+  // Special case: USDT Dominance — just show current value, no RSI
   if (symbol === 'USDT.D') {
     try {
-      const { daily, weekly } = await fetchUsdtDominanceCloses()
-      const rsiD = computeRsi(daily, 14, MIN_BARS.D)
-      const rsiW = computeRsi(weekly, 14, MIN_BARS.W)
+      const { dominance } = await fetchUsdtDominance()
       return Response.json({
         symbol: 'USDT.D',
-        daily: rsiD,
-        weekly: rsiW,
+        daily:   { history: [], live: null, score: null, count: 0, incomplete: false },
+        weekly:  { history: [], live: null, score: null, count: 0, incomplete: false },
         vol24h: 0,
         volSpot: null,
         spotRatio: null,
         ratioFS: null,
         spotRatioPct: null,
         ratioFSPct: null,
-        incomplete: rsiD.incomplete || rsiW.incomplete,
+        incomplete: false,
         isSpecial: true,
+        dominance, // current USDT dominance %
       })
     } catch (err) {
       return Response.json({ error: String(err) }, { status: 500 })
@@ -157,14 +104,14 @@ export async function GET(req: NextRequest) {
 
     return Response.json({
       symbol,
-      daily:      rsiD,
-      weekly:     rsiW,
-      vol24h:     volFutures,
+      daily: rsiD,
+      weekly: rsiW,
+      vol24h: volFutures,
       volSpot,
       spotRatio,
       ratioFS,
       spotRatioPct: null,
-      ratioFSPct:   null,
+      ratioFSPct: null,
       incomplete,
     })
   } catch (err) {

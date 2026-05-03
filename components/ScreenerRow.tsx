@@ -2,7 +2,16 @@
 
 import { useState } from 'react'
 import { ExtraCol } from './ColumnPicker'
-import { rsiTextColor } from '@/lib/rsi'
+
+
+// Harmonized momentum color using CSS variables (works in both light and dark mode)
+function momColor(v: number): string {
+  if (v >= 60) return 'var(--num-green)'
+  if (v >= 50) return 'var(--num-green)'
+  if (v >= 40) return '#c8a800'
+  if (v >= 30) return 'var(--num-red)'
+  return 'var(--num-red)'
+}
 
 const HeatmapRow = require('./HeatmapRow').default as (props: {
   label: string
@@ -35,6 +44,7 @@ export interface ContractData {
   loading?: boolean
   error?: boolean
   isSpecial?: boolean
+  dominance?: number
 }
 
 function formatVol(v: number | null | undefined): string {
@@ -52,11 +62,11 @@ function fmtMom(v: number | null | undefined): string {
 }
 
 function percentileColor(pct: number): string {
-  if (pct >= 80) return '#00e676'
-  if (pct >= 60) return '#69f0ae'
-  if (pct >= 40) return '#fff176'
-  if (pct >= 20) return '#ffb74d'
-  return '#ef5350'
+  if (pct >= 80) return 'var(--num-green)'
+  if (pct >= 60) return 'var(--num-green)'
+  if (pct >= 40) return '#c8a800'
+  if (pct >= 20) return 'var(--num-red)'
+  return 'var(--num-red)'
 }
 
 
@@ -139,7 +149,7 @@ export default function ScreenerRow({
         <div style={{ textAlign: 'right' }}>
           {data.loading ? <span style={dim}>…</span>
             : dLive !== null && dLive !== undefined
-            ? <span style={{ color: rsiTextColor(dLive), fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700 }}>{fmtMom(dLive)}</span>
+            ? <span style={{ color: momColor(dLive), fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700 }}>{fmtMom(dLive)}</span>
             : <span style={dim}>—</span>}
         </div>
 
@@ -147,7 +157,7 @@ export default function ScreenerRow({
         <div style={{ textAlign: 'right' }}>
           {data.loading ? <span style={dim}>…</span>
             : wLive !== null && wLive !== undefined
-            ? <span style={{ color: rsiTextColor(wLive), fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700 }}>{fmtMom(wLive)}</span>
+            ? <span style={{ color: momColor(wLive), fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700 }}>{fmtMom(wLive)}</span>
             : <span style={dim}>—</span>}
         </div>
 
@@ -168,7 +178,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : dPrev !== null && dPrev !== undefined
-              ? <span style={{ color: rsiTextColor(dPrev), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{fmtMom(dPrev)}</span>
+              ? <span style={{ color: momColor(dPrev), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{fmtMom(dPrev)}</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -178,7 +188,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : wPrev !== null && wPrev !== undefined
-              ? <span style={{ color: rsiTextColor(wPrev), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{fmtMom(wPrev)}</span>
+              ? <span style={{ color: momColor(wPrev), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{fmtMom(wPrev)}</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -188,7 +198,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : dScore !== null && dScore !== undefined
-              ? <span style={{ color: rsiTextColor(dScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{dScore.toFixed(1)}%</span>
+              ? <span style={{ color: momColor(dScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{dScore.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -198,7 +208,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : wScore !== null && wScore !== undefined
-              ? <span style={{ color: rsiTextColor(wScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{wScore.toFixed(1)}%</span>
+              ? <span style={{ color: momColor(wScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{wScore.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
