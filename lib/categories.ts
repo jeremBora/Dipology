@@ -20,7 +20,7 @@ export const CATEGORIES: Record<string, string> = {
   // AI & Data
   TAO:'AI', FET:'AI', AGIX:'AI', RNDR:'AI', RENDER:'AI', GRT:'AI',
   OCEAN:'AI', NMR:'AI', AIOZ:'AI', ALT:'AI', MASA:'AI', PAAL:'AI',
-  MYRIA:'AI', TURBO:'AI', WLD:'AI', IQ:'AI', ARKM:'AI', VIRTUAL:'AI',
+  MYRIA:'AI', WLD:'AI', IQ:'AI', ARKM:'AI', VIRTUAL:'AI',
   AI16Z:'AI', ZEREBRO:'AI', ACT:'AI', GRIFFAIN:'AI', PROMPT:'AI',
   CGPT:'AI', ULTI:'AI', GOAT:'AI', COOKIE:'AI',
   // Memecoins
@@ -37,7 +37,7 @@ export const CATEGORIES: Record<string, string> = {
   // Gaming & Metaverse
   AXS:'Gaming', SAND:'Gaming', MANA:'Gaming', GALA:'Gaming', ENJ:'Gaming',
   ILV:'Gaming', ALICE:'Gaming', TLM:'Gaming', WAXP:'Gaming', HERO:'Gaming',
-  MAGIC:'Gaming', BEAM:'Gaming', IMX:'Gaming', RON:'Gaming', SLP:'Gaming',
+  MAGIC:'Gaming', BEAM:'Gaming', RON:'Gaming', SLP:'Gaming',
   PYR:'Gaming', VOXEL:'Gaming', LOOKS:'Gaming', PIXEL:'Gaming', PORTAL:'Gaming',
   // Infra & Oracle
   LINK:'Infra', BAND:'Infra', API3:'Infra', TRB:'Infra', UMA:'Infra',
