@@ -93,6 +93,7 @@ export default function Home() {
     spotRatio: null, ratioFS: null,
     spotRatioPct: null, ratioFSPct: null,
     incomplete: false, loading: true,
+    volAllExchanges: null, isRWA: false,
   })
 
   const recalcPercentiles = useCallback((map: Map<string, ContractData>) => {
@@ -233,8 +234,9 @@ export default function Home() {
   const showSpotRatio = extraCols.has('spotRatio' as ExtraCol)
   const showRatioFS   = extraCols.has('ratioFS' as ExtraCol)
   const showVolSpot   = extraCols.has('volSpot' as ExtraCol)
+  const showVolAll    = extraCols.has('volAllExchanges' as ExtraCol)
 
-  const extraCount = (showMomDPrev?1:0)+(showMomWPrev?1:0)+(showScoreD?1:0)+(showScoreW?1:0)+(showSpotRatio?1:0)+(showRatioFS?1:0)+(showVolSpot?1:0)
+  const extraCount = (showMomDPrev?1:0)+(showMomWPrev?1:0)+(showScoreD?1:0)+(showScoreW?1:0)+(showSpotRatio?1:0)+(showRatioFS?1:0)+(showVolSpot?1:0)+(showVolAll?1:0)
   const colCount = 4 + extraCount
   const gridCols = `2fr repeat(${colCount - 1}, 1fr)`
 
@@ -280,7 +282,7 @@ export default function Home() {
         <button
           onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
           style={{ position: 'absolute', top: 28, right: 0, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 15, transition: 'all 0.2s' }}
-        >{theme === 'dark' ? '◐' : '○'}</button>
+        >{theme === 'dark' ? '☀️' : '🌙'}</button>
 
         <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: "'Dodger', 'Syne', sans-serif" }}>
           Dipology Screener
@@ -341,19 +343,28 @@ export default function Home() {
           fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 600,
         }}>Missing data ✕</button>
 
-        {/* Search */}
-        <input
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Rechercher..."
-          style={{
-            marginLeft: 'auto', padding: '5px 12px',
-            background: 'var(--bg-panel)', border: '1px solid var(--border)',
-            borderRadius: 6, color: 'var(--text-primary)',
-            fontFamily: "'Space Mono', monospace", fontSize: 11,
-            outline: 'none', width: 160,
-          }}
-        />
+        {/* Search - pill */}
+        <div style={{
+          marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6,
+          background: 'var(--bg-panel)', border: '1px solid var(--border)',
+          borderRadius: 20, padding: '4px 12px',
+        }}>
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+            <circle cx="4.5" cy="4.5" r="3.2" stroke="var(--text-dim)" strokeWidth="1.2"/>
+            <line x1="7" y1="7" x2="10" y2="10" stroke="var(--text-dim)" strokeWidth="1.2" strokeLinecap="round"/>
+          </svg>
+          <input
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder=""
+            style={{
+              background: 'none', border: 'none', outline: 'none',
+              color: 'var(--text-primary)',
+              fontFamily: "'Space Mono', monospace", fontSize: 10,
+              width: 110,
+            }}
+          />
+        </div>
 
         {/* Refresh button */}
         <button
@@ -386,6 +397,7 @@ export default function Home() {
           <ColBtn col="momentumW" label="Mom W" />
           <ColBtn col="vol24h"    label="F Vol 24H" />
           {showVolSpot   && <ColBtn col="volSpot"   label="S Vol 24H" />}
+          {showVolAll    && <SimpleHdr label="Vol Total" />}
           {showMomDPrev  && <SimpleHdr label="Mom D-1" />}
           {showMomWPrev  && <SimpleHdr label="Mom W-1" />}
           {showScoreD    && <SimpleHdr label="Score D" />}
@@ -430,6 +442,7 @@ export default function Home() {
               gridCols={gridCols}
               forceOpen={false}
               isPinned={false}
+              showVolAll={showVolAll}
               isFavorite={favorites.has(row.symbol)}
               onToggleFavorite={() => toggleFavorite(row.symbol)}
             />
@@ -458,6 +471,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   const wHist  = data.weekly?.history ?? []
   const dScore = data.daily?.score
   const wScore = data.weekly?.score
+  const dominance = (data as ContractData & { dominance?: number }).dominance
 
   function fmtMom(v: number | null | undefined) {
     if (v === null || v === undefined) return '—'
@@ -467,14 +481,34 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   function momColor(v: number | null | undefined) {
     if (v === null || v === undefined) return 'var(--text-dim)'
     const m = v / 10
-    if (m >= 6) return '#00e676'
-    if (m >= 5) return '#69f0ae'
-    if (m >= 4) return '#fff176'
-    if (m >= 3) return '#ffb74d'
-    return '#ef5350'
+    if (m >= 6) return 'var(--num-green)'
+    if (m >= 5) return 'var(--num-green)'
+    if (m >= 4) return '#c8a800'
+    if (m >= 3) return 'var(--num-red)'
+    return 'var(--num-red)'
   }
 
-  // Mini heatmap cells
+  // USDT.D seuils basés sur l'analyse de marché :
+  // < 5% = bull zone (capitaux en altcoins)
+  // 5-6% = neutre
+  // > 6% = bear zone (capitaux en stablecoins)
+  function usdtSignal(dom: number | undefined) {
+    if (dom === undefined || dom === 0) return null
+    if (dom < 5) return { text: 'Bull Zone', color: 'var(--num-green)', dot: '#22c55e' }
+    if (dom <= 6) return { text: 'Neutre', color: '#c8a800', dot: '#eab308' }
+    return { text: 'Bear Zone', color: 'var(--num-red)', dot: '#ef4444' }
+  }
+
+  const signal = isUSDT ? usdtSignal(dominance) : null
+
+  // Donut chart params for USDT.D
+  // Scale: 0-10% dominance range shown on donut
+  // At 4.82% on 0-10% scale = 48.2% of circle
+  const domPct = dominance !== undefined ? Math.min(dominance / 10, 1) : 0
+  const circumference = 2 * Math.PI * 36 // r=36
+  const usdtDash = circumference * domPct
+  const altDash  = circumference * (1 - domPct) - 4
+
   const dCells = [...Array(9).fill(null).map((_, i) => dHist[dHist.length - 9 + i] ?? null), dLive ?? null]
   const wCells = [...Array(9).fill(null).map((_, i) => wHist[wHist.length - 9 + i] ?? null), wLive ?? null]
 
@@ -489,8 +523,6 @@ function PinnedCard({ data, theme, favorite, onFav }: {
     return '#a83232'
   }
 
-  const sentiment = null // removed Bull/Bear signal
-
   return (
     <div style={{
       background: 'var(--bg-panel)',
@@ -502,43 +534,104 @@ function PinnedCard({ data, theme, favorite, onFav }: {
         <span style={{ color: accentColor, fontSize: 11 }}>{isBTC ? '★' : '◆'}</span>
         <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Space Mono', monospace" }}>{base}</span>
         {!isBTC && <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 1 }}>dominance</span>}
-
+        {signal && (
+          <span style={{ fontSize: 9, color: signal.color, fontWeight: 600, marginLeft: 4, letterSpacing: 1 }}>
+            · {signal.text}
+          </span>
+        )}
         <button onClick={onFav} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: favorite ? '#f0a020' : 'var(--text-dim)' }}>
           {favorite ? '★' : '☆'}
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isUSDT ? '1fr' : '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
-        {(isUSDT ? [
-          { label: 'Dominance USDT actuelle', val: data.dominance !== undefined && data.dominance > 0 ? data.dominance.toFixed(2) + '%' : '—', color: '#ff9f43' },
-        ] : [
-          { label: 'Mom Daily', val: fmtMom(dLive), color: momColor(dLive) },
-          { label: 'Mom Weekly', val: fmtMom(wLive), color: momColor(wLive) },
-          { label: 'Score D', val: dScore !== null && dScore !== undefined ? dScore.toFixed(1) + '%' : '—', color: 'var(--text-muted)' },
-        ]).map(m => (
-          <div key={m.label} style={{ background: theme === 'dark' ? '#0a0f1e' : '#f5f9f5', borderRadius: 6, padding: '6px 10px' }}>
-            <div style={{ fontSize: 8, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 3 }}>{m.label}</div>
-            <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 15, fontWeight: 700, color: m.color }}>{m.val}</div>
+      {/* BTC content */}
+      {isBTC && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+            {[
+              { label: 'Mom Daily', val: fmtMom(dLive), color: momColor(dLive) },
+              { label: 'Mom Weekly', val: fmtMom(wLive), color: momColor(wLive) },
+            ].map(m => (
+              <div key={m.label} style={{ background: theme === 'dark' ? '#0a0f1e' : '#f5f9f5', borderRadius: 6, padding: '6px 10px' }}>
+                <div style={{ fontSize: 8, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 3 }}>{m.label}</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 15, fontWeight: 700, color: m.color }}>{m.val}</div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      {!isUSDT && <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>}
-      {!isUSDT && [{ label: 'D', cells: dCells, score: dScore }, { label: 'W', cells: wCells, score: wScore }].map(row => (
-        <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'center', marginBottom: 4 }}>
-          <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace" }}>{row.label}</span>
-          {row.cells.slice(0, 9).map((v, i) => (
-            <div key={i} style={{ flex: 1, height: 18, borderRadius: 2, background: cellColor(v) }} title={v !== null ? v.toFixed(1) : '—'} />
+          <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>
+          {[{ label: 'D', cells: dCells, score: dScore }, { label: 'W', cells: wCells, score: wScore }].map(row => (
+            <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'center', marginBottom: 3 }}>
+              <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace" }}>{row.label}</span>
+              {row.cells.slice(0, 9).map((v, i) => (
+                <div key={i} style={{ flex: 1, height: 18, borderRadius: 2, background: cellColor(v) }} />
+              ))}
+              <div style={{ width: 4, flexShrink: 0 }} />
+              <div style={{ flex: 1, height: 18, borderRadius: 2, background: cellColor(row.cells[9] ?? null), border: `1px solid ${accentColor}66` }} />
+              <div style={{ flex: 1.5, height: 18, borderRadius: 2, background: theme === 'dark' ? '#0a0f1e' : '#f0f4f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700, color: accentColor }}>
+                  {row.score !== null && row.score !== undefined ? row.score.toFixed(1) + '%' : '—'}
+                </span>
+              </div>
+            </div>
           ))}
-          <div style={{ width: 4, flexShrink: 0 }} />
-          <div style={{ flex: 1, height: 18, borderRadius: 2, background: cellColor(row.cells[9] ?? null), border: `1px solid ${accentColor}66` }} />
-          <div style={{ flex: 1.5, height: 18, borderRadius: 2, background: theme === 'dark' ? '#0a0f1e' : '#f0f4f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700, color: accentColor }}>
-              {row.score !== null && row.score !== undefined ? row.score.toFixed(1) + '%' : '—'}
-            </span>
+        </>
+      )}
+
+      {/* USDT.D content - donut chart */}
+      {isUSDT && dominance !== undefined && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Donut */}
+          <div style={{ position: 'relative', width: 90, height: 90, flexShrink: 0 }}>
+            <svg width="90" height="90" viewBox="0 0 90 90" fill="none">
+              {/* BG */}
+              <circle cx="45" cy="45" r="36" stroke={theme === 'dark' ? '#1a1d2e' : '#f0f0f5'} strokeWidth="9" fill="none"/>
+              {/* Altcoin arc (green, faint) */}
+              <circle cx="45" cy="45" r="36"
+                stroke="#22c55e" strokeWidth="9" fill="none" opacity="0.25"
+                strokeDasharray={`${altDash} ${usdtDash + 8}`}
+                strokeDashoffset={-(usdtDash + 6)}
+                strokeLinecap="round"/>
+              {/* USDT arc (amber) */}
+              <circle cx="45" cy="45" r="36"
+                stroke="#ff9f0a" strokeWidth="9" fill="none"
+                strokeDasharray={`${usdtDash - 2} ${circumference}`}
+                strokeDashoffset="56"
+                strokeLinecap="round"/>
+            </svg>
+            {/* Center value */}
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 14, fontWeight: 700, color: '#ff9f0a', lineHeight: 1 }}>
+                {dominance.toFixed(2)}%
+              </div>
+              <div style={{ fontSize: 7, color: 'var(--text-muted)', marginTop: 2, letterSpacing: 0.5 }}>USDT.D</div>
+            </div>
+          </div>
+
+          {/* Info */}
+          <div style={{ flex: 1 }}>
+            {/* Pills */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 8, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,159,67,0.12)', color: '#ff9f0a', border: '0.5px solid rgba(255,159,67,0.3)', fontWeight: 600 }}>
+                USDT {dominance.toFixed(2)}%
+              </span>
+              <span style={{ fontSize: 8, padding: '2px 8px', borderRadius: 20, background: 'rgba(34,197,94,0.08)', color: '#22c55e', border: '0.5px solid rgba(34,197,94,0.2)', fontWeight: 600 }}>
+                Alts {(100 - dominance).toFixed(2)}%
+              </span>
+            </div>
+            {/* Thresholds */}
+            <div style={{ fontSize: 9, color: 'var(--text-dim)', lineHeight: 1.9 }}>
+              <span style={{ color: '#22c55e' }}>◆</span> &lt; 5% → Bull zone<br/>
+              <span style={{ color: '#eab308' }}>◆</span> 5–6% → Neutre<br/>
+              <span style={{ color: '#ef4444' }}>◆</span> &gt; 6% → Bear zone
+            </div>
           </div>
         </div>
-      ))}
+      )}
+
+      {isUSDT && (dominance === undefined || dominance === 0) && (
+        <div style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', padding: '20px 0' }}>chargement…</div>
+      )}
     </div>
   )
 }
+

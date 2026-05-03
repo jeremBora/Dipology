@@ -9,6 +9,7 @@ export type ExtraCol =
   | 'spotRatio'
   | 'ratioFS'
   | 'volSpot'
+  | 'volAllExchanges'
 
 export const EXTRA_COL_LABELS: Record<ExtraCol, string> = {
   momentumDPrev: 'Momentum D-1',
@@ -17,7 +18,8 @@ export const EXTRA_COL_LABELS: Record<ExtraCol, string> = {
   scorePctW:     'Score % W',
   spotRatio:     'Spot Ratio',
   ratioFS:       'Ratio F/S',
-  volSpot:       'Vol Spot 24H',
+  volSpot:       'S Vol 24H',
+  volAllExchanges: 'Vol Total (tous CEX)',
 }
 
 interface ColumnPickerProps {

@@ -45,6 +45,8 @@ export interface ContractData {
   error?: boolean
   isSpecial?: boolean
   dominance?: number
+  volAllExchanges?: number | null
+  isRWA?: boolean
 }
 
 function formatVol(v: number | null | undefined): string {
@@ -81,6 +83,7 @@ export default function ScreenerRow({
   isPinned?: boolean
   isFavorite?: boolean
   onToggleFavorite?: () => void
+  showVolAll?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const isOpen = forceOpen || open
@@ -235,6 +238,14 @@ export default function ScreenerRow({
           </div>
         )}
 
+        {/* Vol Total tous CEX */}
+        {showVolAll && (
+          <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
+            {data.loading ? <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
+              : formatVol(data.volAllExchanges ?? null)}
+          </div>
+        )}
+
         <div />
       </div>
 
@@ -278,9 +289,9 @@ export default function ScreenerRow({
 
           {/* Values on /10 note */}
           <div style={{ marginTop: 8, fontSize: 9, color: 'var(--text-dim)', letterSpacing: 1 }}>
-            mom D = <span style={{ color: momColor(dLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(dLive)}</span>
+            mom D = <span style={{ color: rsiTextColor(dLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(dLive)}</span>
             &nbsp;·&nbsp;
-            mom W = <span style={{ color: momColor(wLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(wLive)}</span>
+            mom W = <span style={{ color: rsiTextColor(wLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(wLive)}</span>
             &nbsp;·&nbsp;
             score D = <span style={{ fontFamily: "'Space Mono', monospace" }}>{dScore !== null && dScore !== undefined ? dScore.toFixed(1) + '%' : '—'}</span>
             &nbsp;·&nbsp;
