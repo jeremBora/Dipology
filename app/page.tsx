@@ -238,7 +238,7 @@ export default function Home() {
 
   const extraCount = (showMomDPrev?1:0)+(showMomWPrev?1:0)+(showScoreD?1:0)+(showScoreW?1:0)+(showSpotRatio?1:0)+(showRatioFS?1:0)+(showVolSpot?1:0)+(showVolAll?1:0)
   const colCount = 4 + extraCount
-  const gridCols = `2fr repeat(${colCount - 1}, 1fr)`
+  const gridCols = `2fr repeat(${colCount - 1}, 1fr) 36px`
 
   const headerBg = theme === 'dark' ? '#060910' : '#f0faf4'
 
@@ -651,6 +651,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
