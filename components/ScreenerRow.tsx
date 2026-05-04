@@ -201,7 +201,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : dScore !== null && dScore !== undefined
-              ? <span style={{ color: momColor(dScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{((dScore/10).toFixed(2))}</span>
+              ? <span style={{ color: momColor(dScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{(dScore/10).toFixed(2)}</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -211,7 +211,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : wScore !== null && wScore !== undefined
-              ? <span style={{ color: momColor(wScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{((wScore/10).toFixed(2))}</span>
+              ? <span style={{ color: momColor(wScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{(wScore/10).toFixed(2)}</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -302,8 +302,3 @@ export default function ScreenerRow({
     </div>
   )
 }
-
-
-
-
- 
