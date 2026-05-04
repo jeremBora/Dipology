@@ -73,7 +73,7 @@ function percentileColor(pct: number): string {
 
 
 export default function ScreenerRow({
-  data, index, extraCols, gridCols, forceOpen, isPinned, isFavorite, onToggleFavorite
+  data, index, extraCols, gridCols, forceOpen, isPinned, isFavorite, onToggleFavorite, colVolAll
 }: {
   data: ContractData
   index: number
@@ -303,6 +303,7 @@ export default function ScreenerRow({
     </div>
   )
 }
+ 
  
  
  
