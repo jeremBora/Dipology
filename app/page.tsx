@@ -49,6 +49,31 @@ function percentileRank(values: number[], val: number): number {
   return Math.round((idx / sorted.length) * 100)
 }
 
+
+// ── Score composite Top 30 ────────────────────────────────────────────────────
+// 50% Mom Daily live + 30% Pente Daily (3j) + 20% Mom Weekly live
+function compositeScore(data: ContractData): number | null {
+  const dLive = data.daily?.live
+  const wLive = data.weekly?.live
+  const hist  = data.daily?.history ?? []
+
+  if (dLive === null || dLive === undefined) return null
+  if (wLive === null || wLive === undefined) return null
+
+  // Pente = mom daily live - moyenne des 3 dernières valeurs historiques
+  const last3 = hist.slice(-3).filter((v): v is number => v !== null && v !== undefined)
+  const slope = last3.length > 0
+    ? dLive - (last3.reduce((a, b) => a + b, 0) / last3.length)
+    : 0
+
+  // Score composite /10
+  const momD  = dLive / 10
+  const momW  = wLive / 10
+  const pente = slope / 10
+
+  return (momD * 0.5) + (pente * 3) + (momW * 0.2)
+}
+
 export default function Home() {
   const [contracts, setContracts]           = useState<Map<string, ContractData>>(new Map())
   const [symbols, setSymbols]               = useState<string[]>([])
@@ -61,7 +86,7 @@ export default function Home() {
   const [theme, setTheme]                   = useState<'dark' | 'light'>('dark')
   const [pushMissingToBottom, setPushMissingToBottom] = useState(false)
   const [favorites, setFavorites]           = useState<Set<string>>(new Set())
-  const [activeTab, setActiveTab]           = useState<'all' | 'favorites'>('all')
+  const [activeTab, setActiveTab]           = useState<'all' | 'favorites' | 'top30'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [searchQuery, setSearchQuery]       = useState('')
   const [hideMissing, setHideMissing]       = useState(false)
@@ -196,6 +221,25 @@ export default function Home() {
     return true
   }
 
+  function getTop30Rows(): ContractData[] {
+    return Array.from(contracts.values())
+      .filter(c => {
+        if (c.loading || c.incomplete) return false
+        if (PINNED_SYMBOLS.includes(c.symbol)) return false
+        const dLive = c.daily?.live
+        const wLive = c.weekly?.live
+        const vol   = c.vol24h ?? 0
+        if (dLive === null || dLive === undefined || dLive / 10 < 5) return false
+        if (wLive === null || wLive === undefined || wLive / 10 < 4) return false
+        if (vol < 10_000_000) return false
+        return true
+      })
+      .map(c => ({ ...c, _compositeScore: compositeScore(c) }))
+      .filter((c): c is ContractData & { _compositeScore: number } => c._compositeScore !== null)
+      .sort((a, b) => (b as ContractData & { _compositeScore: number })._compositeScore - (a as ContractData & { _compositeScore: number })._compositeScore)
+      .slice(0, 30)
+  }
+
   function getSortedRows(): { pinned: ContractData[]; normal: ContractData[] } {
     const all = Array.from(contracts.values()).filter(c => !c.loading)
     const pinned = PINNED_SYMBOLS
@@ -211,8 +255,8 @@ export default function Home() {
         }
         let va: number | string = 0, vb: number | string = 0
         if (sortKey === 'symbol')    { va = a.symbol;                    vb = b.symbol }
-        if (sortKey === 'momentumD') { va = a.daily?.live      ?? -1;    vb = b.daily?.live      ?? -1 }
-        if (sortKey === 'momentumW') { va = a.weekly?.live     ?? -1;    vb = b.weekly?.live     ?? -1 }
+        if (sortKey === 'momentumD') { va = a.daily?.score     ?? -1;    vb = b.daily?.score     ?? -1 }
+        if (sortKey === 'momentumW') { va = a.weekly?.score    ?? -1;    vb = b.weekly?.score    ?? -1 }
         if (sortKey === 'vol24h')    { va = a.vol24h           ?? 0;     vb = b.vol24h           ?? 0 }
         if (sortKey === 'spotRatio') { va = a.spotRatio        ?? -1;    vb = b.spotRatio        ?? -1 }
         if (sortKey === 'ratioFS')   { va = a.ratioFS          ?? 999999;vb = b.ratioFS          ?? 999999 }
@@ -238,7 +282,7 @@ export default function Home() {
 
   const extraCount = (showMomDPrev?1:0)+(showMomWPrev?1:0)+(showScoreD?1:0)+(showScoreW?1:0)+(showSpotRatio?1:0)+(showRatioFS?1:0)+(showVolSpot?1:0)+(showVolAll?1:0)
   const colCount = 4 + extraCount
-  const gridCols = `2fr repeat(${colCount - 1}, 1fr) 36px`
+  const gridCols = `2fr repeat(${colCount - 1}, 1fr)`
 
   const headerBg = theme === 'dark' ? '#060910' : '#f0faf4'
 
@@ -282,23 +326,7 @@ export default function Home() {
         <button
           onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
           style={{ position: 'absolute', top: 28, right: 0, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 15, transition: 'all 0.2s' }}
-        >{theme === 'dark' ? (
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <circle cx="7" cy="7" r="2.8" stroke="currentColor" strokeWidth="1.2"/>
-              <line x1="7" y1="0.5" x2="7" y2="2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <line x1="7" y1="12" x2="7" y2="13.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <line x1="0.5" y1="7" x2="2" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <line x1="12" y1="7" x2="13.5" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <line x1="2.4" y1="2.4" x2="3.4" y2="3.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <line x1="10.6" y1="10.6" x2="11.6" y2="11.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <line x1="11.6" y1="2.4" x2="10.6" y2="3.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-              <line x1="3.4" y1="10.6" x2="2.4" y2="11.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-          ) : (
-            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-              <path d="M12.5 8.5A6 6 0 015.5 1.5a5.5 5.5 0 100 11 6 6 0 007-4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          )}</button>
+        >{theme === 'dark' ? '☀️' : '🌙'}</button>
 
         <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: "'Dodger', 'Syne', sans-serif" }}>
           Dipology Screener
@@ -333,7 +361,7 @@ export default function Home() {
 
       {/* Tabs: All / Favorites */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        {(['all', 'favorites'] as const).map(tab => (
+        {(['all', 'favorites', 'top30'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
             padding: '5px 14px', borderRadius: 20,
             background: activeTab === tab ? 'var(--accent)' : 'var(--bg-panel)',
@@ -343,7 +371,7 @@ export default function Home() {
             fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 600,
             transition: 'all 0.2s',
           }}>
-            {tab === 'all' ? 'Tous' : '★ Favoris'}
+            {tab === 'all' ? 'Tous' : tab === 'favorites' ? '★ Favoris' : '🔥 Top 30'}
           </button>
         ))}
 
@@ -383,13 +411,6 @@ export default function Home() {
         </div>
 
         {/* Refresh button */}
-        <ColumnPicker active={extraCols} onToggle={col => {
-          setExtraCols(prev => {
-            const next = new Set(prev)
-            next.has(col) ? next.delete(col) : next.add(col)
-            return next
-          })
-        }} />
         <button
           onClick={() => loadAll(symbols)}
           disabled={isLoading}
@@ -427,7 +448,26 @@ export default function Home() {
           {showScoreW    && <SimpleHdr label="Score W" />}
           {showSpotRatio && <ColBtn col="spotRatio" label="Turn-over" />}
           {showRatioFS   && <ColBtn col="ratioFS"   label="Ratio F/S" />}
-          <div style={{ width: 36 }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px' }}>
+            <button
+              onClick={() => setPushMissingToBottom(p => !p)}
+              title="Repousser données manquantes en bas"
+              style={{
+                background: pushMissingToBottom ? 'rgba(255,159,67,0.15)' : 'none',
+                border: `1px solid ${pushMissingToBottom ? '#ff9f43' : 'var(--border)'}`,
+                color: pushMissingToBottom ? '#ff9f43' : 'var(--text-dim)',
+                borderRadius: 4, padding: '2px 7px', cursor: 'pointer',
+                fontSize: 10, fontFamily: "'Dodger', 'Syne', sans-serif",
+              }}
+            >↓?</button>
+            <ColumnPicker active={extraCols} onToggle={col => {
+              setExtraCols(prev => {
+                const next = new Set(prev)
+                next.has(col) ? next.delete(col) : next.add(col)
+                return next
+              })
+            }} />
+          </div>
         </div>
 
         {/* Normal rows */}
@@ -498,9 +538,9 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   // > 6% = bear zone (capitaux en stablecoins)
   function usdtSignal(dom: number | undefined) {
     if (dom === undefined || dom === 0) return null
-    if (dom < 5) return { text: 'RISK ON', color: '#1c7c3a', dot: '#22c55e', bg: '#f0fdf4', border: '#bbf7d0', label: 'RISK ON' }
-    if (dom <= 6) return { text: 'Neutre', color: '#b07010', dot: '#eab308', bg: '#fef9c3', border: '#fde68a', label: 'Neutre' }
-    return { text: 'RISK OFF', color: '#991b1b', dot: '#ef4444', bg: '#fee2e2', border: '#fca5a5', label: 'RISK OFF' }
+    if (dom < 5) return { text: 'Bull Zone', color: 'var(--num-green)', dot: '#22c55e' }
+    if (dom <= 6) return { text: 'Neutre', color: '#c8a800', dot: '#eab308' }
+    return { text: 'Bear Zone', color: 'var(--num-red)', dot: '#ef4444' }
   }
 
   const signal = isUSDT ? usdtSignal(dominance) : null
@@ -583,51 +623,51 @@ function PinnedCard({ data, theme, favorite, onFav }: {
 
       {/* USDT.D content - donut chart */}
       {isUSDT && dominance !== undefined && (
-        <div>
-          {/* Big value + badge */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 28, fontWeight: 500, color: signal ? signal.color : 'var(--text-primary)', lineHeight: 1 }}>
-              {dominance.toFixed(2)}%
-            </span>
-            {signal && (
-              <span style={{ fontSize: 9, fontWeight: 600, padding: '3px 9px', borderRadius: 20, background: signal.bg, color: signal.color, border: `0.5px solid ${signal.border}`, letterSpacing: 0.5 }}>
-                ◆ {signal.label}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {/* Donut */}
+          <div style={{ position: 'relative', width: 90, height: 90, flexShrink: 0 }}>
+            <svg width="90" height="90" viewBox="0 0 90 90" fill="none">
+              {/* BG */}
+              <circle cx="45" cy="45" r="36" stroke={theme === 'dark' ? '#1a1d2e' : '#f0f0f5'} strokeWidth="9" fill="none"/>
+              {/* Altcoin arc (green, faint) */}
+              <circle cx="45" cy="45" r="36"
+                stroke="#22c55e" strokeWidth="9" fill="none" opacity="0.25"
+                strokeDasharray={`${altDash} ${usdtDash + 8}`}
+                strokeDashoffset={-(usdtDash + 6)}
+                strokeLinecap="round"/>
+              {/* USDT arc (amber) */}
+              <circle cx="45" cy="45" r="36"
+                stroke="#ff9f0a" strokeWidth="9" fill="none"
+                strokeDasharray={`${usdtDash - 2} ${circumference}`}
+                strokeDashoffset="56"
+                strokeLinecap="round"/>
+            </svg>
+            {/* Center value */}
+            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
+              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 14, fontWeight: 700, color: '#ff9f0a', lineHeight: 1 }}>
+                {dominance.toFixed(2)}%
+              </div>
+              <div style={{ fontSize: 7, color: 'var(--text-muted)', marginTop: 2, letterSpacing: 0.5 }}>USDT.D</div>
+            </div>
+          </div>
+
+          {/* Info */}
+          <div style={{ flex: 1 }}>
+            {/* Pills */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 8, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,159,67,0.12)', color: '#ff9f0a', border: '0.5px solid rgba(255,159,67,0.3)', fontWeight: 600 }}>
+                USDT {dominance.toFixed(2)}%
               </span>
-            )}
-          </div>
-
-          {/* Segment scale labels */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 7.5, color: 'var(--text-dim)', marginBottom: 4, padding: '0 1px' }}>
-            <span>0%</span><span>5%</span><span>6%</span><span>10%</span>
-          </div>
-
-          {/* Segments */}
-          <div style={{ display: 'flex', gap: 3, marginBottom: 5 }}>
-            {[0,1,2,3,4,5,6,7,8,9].map(i => {
-              const segVal = (i + 1)
-              const filled = dominance >= segVal - 1
-              let color = '#e5e5ea'
-              if (i < 5) color = filled ? '#22c55e' : '#e5e5ea'
-              else if (i < 7) color = filled ? '#f59e0b' : '#e5e5ea'
-              else color = filled ? '#ef4444' : '#e5e5ea'
-              const isActive = Math.floor(dominance) === i || (i === 9 && dominance >= 9)
-              return (
-                <div key={i} style={{
-                  flex: 1, height: isActive ? 11 : 7,
-                  marginTop: isActive ? -2 : 0,
-                  borderRadius: 3.5, background: color,
-                  boxShadow: isActive ? `0 0 8px ${color}88` : 'none',
-                  transition: 'all 0.3s',
-                }} />
-              )
-            })}
-          </div>
-
-          {/* Zone labels */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 8, fontWeight: 500 }}>
-            <span style={{ color: '#22c55e' }}>◆ RISK ON</span>
-            <span style={{ color: '#f59e0b' }}>◆ Neutre</span>
-            <span style={{ color: '#ef4444' }}>◆ RISK OFF</span>
+              <span style={{ fontSize: 8, padding: '2px 8px', borderRadius: 20, background: 'rgba(34,197,94,0.08)', color: '#22c55e', border: '0.5px solid rgba(34,197,94,0.2)', fontWeight: 600 }}>
+                Alts {(100 - dominance).toFixed(2)}%
+              </span>
+            </div>
+            {/* Thresholds */}
+            <div style={{ fontSize: 9, color: 'var(--text-dim)', lineHeight: 1.9 }}>
+              <span style={{ color: '#22c55e' }}>◆</span> &lt; 5% → Bull zone<br/>
+              <span style={{ color: '#eab308' }}>◆</span> 5–6% → Neutre<br/>
+              <span style={{ color: '#ef4444' }}>◆</span> &gt; 6% → Bear zone
+            </div>
           </div>
         </div>
       )}
@@ -639,9 +679,3 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
- 
- 
- 
- 
- 
- 

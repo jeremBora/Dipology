@@ -73,7 +73,7 @@ function percentileColor(pct: number): string {
 
 
 export default function ScreenerRow({
-  data, index, extraCols, gridCols, forceOpen, isPinned, isFavorite, onToggleFavorite, showVolAll
+  data, index, extraCols, gridCols, forceOpen, isPinned, isFavorite, onToggleFavorite
 }: {
   data: ContractData
   index: number
@@ -84,6 +84,8 @@ export default function ScreenerRow({
   isFavorite?: boolean
   onToggleFavorite?: () => void
   showVolAll?: boolean
+  compositeScore?: number | null
+  rank?: number
 }) {
   const [open, setOpen] = useState(false)
   const isOpen = forceOpen || open
@@ -136,6 +138,11 @@ export default function ScreenerRow({
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: isFavorite ? '#f0a020' : 'var(--text-dim)', padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
           >{isFavorite ? '★' : '☆'}</button>
 
+          {rank !== undefined && (
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: rank <= 5 ? 'var(--accent)' : 'var(--text-dim)', minWidth: 16, textAlign: 'right', flexShrink: 0 }}>
+              {rank}
+            </span>
+          )}
           {!forceOpen && (
             <span style={{ fontSize: 7, color: isOpen ? 'var(--accent-dim)' : 'var(--text-dim)', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▶</span>
           )}
@@ -175,13 +182,6 @@ export default function ScreenerRow({
             {data.loading ? <span style={dim}>…</span> : formatVol(data.volSpot)}
           </div>
         )}
-        {/* Vol Total tous CEX */}
-        {showVolAll && (
-          <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
-            {data.loading ? <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
-              : formatVol(data.volAllExchanges ?? null)}
-          </div>
-        )}
 
         {/* Mom D-1 */}
         {showMomDPrev && (
@@ -208,7 +208,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : dScore !== null && dScore !== undefined
-              ? <span style={{ color: momColor(dScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{(dScore/10).toFixed(2)}</span>
+              ? <span style={{ color: momColor(dScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{dScore.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -218,7 +218,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : wScore !== null && wScore !== undefined
-              ? <span style={{ color: momColor(wScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{(wScore/10).toFixed(2)}</span>
+              ? <span style={{ color: momColor(wScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{wScore.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -245,6 +245,13 @@ export default function ScreenerRow({
           </div>
         )}
 
+        {/* Vol Total tous CEX */}
+        {showVolAll && (
+          <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
+            {data.loading ? <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
+              : formatVol(data.volAllExchanges ?? null)}
+          </div>
+        )}
 
         <div />
       </div>
@@ -289,9 +296,9 @@ export default function ScreenerRow({
 
           {/* Values on /10 note */}
           <div style={{ marginTop: 8, fontSize: 9, color: 'var(--text-dim)', letterSpacing: 1 }}>
-            mom D = <span style={{ color: momColor(dLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(dLive)}</span>
+            mom D = <span style={{ color: rsiTextColor(dLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(dLive)}</span>
             &nbsp;·&nbsp;
-            mom W = <span style={{ color: momColor(wLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(wLive)}</span>
+            mom W = <span style={{ color: rsiTextColor(wLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(wLive)}</span>
             &nbsp;·&nbsp;
             score D = <span style={{ fontFamily: "'Space Mono', monospace" }}>{dScore !== null && dScore !== undefined ? dScore.toFixed(1) + '%' : '—'}</span>
             &nbsp;·&nbsp;
@@ -302,7 +309,3 @@ export default function ScreenerRow({
     </div>
   )
 }
- 
- 
- 
- 
