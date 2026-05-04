@@ -85,7 +85,6 @@ export default function ScreenerRow({
   onToggleFavorite?: () => void
   showVolAll?: boolean
   compositeScore?: number | null
-  rank?: number
 }) {
   const [open, setOpen] = useState(false)
   const isOpen = forceOpen || open
@@ -305,6 +304,7 @@ export default function ScreenerRow({
     </div>
   )
 }
+ 
  
  
  
