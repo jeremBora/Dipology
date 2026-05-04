@@ -52,7 +52,7 @@ function percentileRank(values: number[], val: number): number {
 
 // ── Score composite Top 30 ────────────────────────────────────────────────────
 // 50% Mom Daily live + 30% Pente Daily (3j) + 20% Mom Weekly live
-function compositeScore(data: ContractData): number | null {
+function cScore(data: ContractData): number | null {
   const dLive = data.daily?.live
   const wLive = data.weekly?.live
   const hist  = data.daily?.history ?? []
@@ -234,9 +234,9 @@ export default function Home() {
         if (vol < 10_000_000) return false
         return true
       })
-      .map(c => ({ ...c, _compositeScore: compositeScore(c) }))
-      .filter((c): c is ContractData & { _compositeScore: number } => c._compositeScore !== null)
-      .sort((a, b) => (b as ContractData & { _compositeScore: number })._compositeScore - (a as ContractData & { _compositeScore: number })._compositeScore)
+      .map(c => ({ ...c, _cScore: cScore(c) }))
+      .filter((c): c is ContractData & { _cScore: number } => c._cScore !== null)
+      .sort((a, b) => (b as ContractData & { _cScore: number })._cScore - (a as ContractData & { _cScore: number })._cScore)
       .slice(0, 30)
   }
 
@@ -278,9 +278,9 @@ export default function Home() {
   const showSpotRatio = extraCols.has('spotRatio' as ExtraCol)
   const showRatioFS   = extraCols.has('ratioFS' as ExtraCol)
   const showVolSpot   = extraCols.has('volSpot' as ExtraCol)
-  const showVolAll    = extraCols.has('volAllExchanges' as ExtraCol)
+  const colVolAll    = extraCols.has('volAllExchanges' as ExtraCol)
 
-  const extraCount = (showMomDPrev?1:0)+(showMomWPrev?1:0)+(showScoreD?1:0)+(showScoreW?1:0)+(showSpotRatio?1:0)+(showRatioFS?1:0)+(showVolSpot?1:0)+(showVolAll?1:0)
+  const extraCount = (showMomDPrev?1:0)+(showMomWPrev?1:0)+(showScoreD?1:0)+(showScoreW?1:0)+(showSpotRatio?1:0)+(showRatioFS?1:0)+(showVolSpot?1:0)+(colVolAll?1:0)
   const colCount = 4 + extraCount
   const gridCols = `2fr repeat(${colCount - 1}, 1fr)`
 
@@ -441,7 +441,7 @@ export default function Home() {
           <ColBtn col="momentumW" label="Mom W" />
           <ColBtn col="vol24h"    label="F Vol 24H" />
           {showVolSpot   && <ColBtn col="volSpot"   label="S Vol 24H" />}
-          {showVolAll    && <SimpleHdr label="Vol Total" />}
+          {colVolAll    && <SimpleHdr label="Vol Total" />}
           {showMomDPrev  && <SimpleHdr label="Mom D-1" />}
           {showMomWPrev  && <SimpleHdr label="Mom W-1" />}
           {showScoreD    && <SimpleHdr label="Score D" />}
@@ -486,7 +486,7 @@ export default function Home() {
               gridCols={gridCols}
               forceOpen={false}
               isPinned={false}
-              showVolAll={showVolAll}
+              colVolAll={colVolAll}
               isFavorite={favorites.has(row.symbol)}
               onToggleFavorite={() => toggleFavorite(row.symbol)}
             />
@@ -679,3 +679,4 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
