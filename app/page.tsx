@@ -498,7 +498,7 @@ export default function Home() {
               ))
         })()}
 
-        {activeTab !== 'top30' && normal.map((row, i) => (
+        {activeTab !== 'rising' && normal.map((row, i) => (
             <ScreenerRow
               key={row.symbol}
               data={row}
@@ -700,6 +700,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
