@@ -477,7 +477,28 @@ export default function Home() {
               aucun résultat
             </div>
           )}
-          {activeTab !== 'top30' && normal.map((row, i) => (
+          {activeTab === 'top30' && (() => {
+          const t30 = getTop30Rows()
+          return t30.length === 0
+            ? <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>chargement...</div>
+            : t30.map((row, i) => (
+                <ScreenerRow
+                  key={row.symbol}
+                  data={row}
+                  index={i}
+                  extraCols={extraCols}
+                  gridCols={gridCols}
+                  forceOpen={false}
+                  isPinned={false}
+                  colVolAll={colVolAll}
+                  isFavorite={favorites.has(row.symbol)}
+                  onToggleFavorite={() => toggleFavorite(row.symbol)}
+                  cScore={cScore(row)}
+                />
+              ))
+        })()}
+
+        {activeTab !== 'top30' && normal.map((row, i) => (
             <ScreenerRow
               key={row.symbol}
               data={row}
@@ -679,5 +700,6 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
