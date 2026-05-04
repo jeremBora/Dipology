@@ -126,7 +126,7 @@ function ScoreCell({ score }: { score: number | null }) {
         color:`rgb(${r},${g},${b})`,
         fontFamily:'Space Mono, monospace', lineHeight: 1,
       }}>
-        {score.toFixed(1)}%
+        {(score/10).toFixed(2)}
       </span>
     </div>
   )
@@ -154,3 +154,4 @@ export default function HeatmapRow({ label, historyT, liveT, score, history, liv
     </div>
   )
 }
+ 
