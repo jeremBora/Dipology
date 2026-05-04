@@ -83,8 +83,8 @@ export default function ScreenerRow({
   isPinned?: boolean
   isFavorite?: boolean
   onToggleFavorite?: () => void
-  showVolAll?: boolean
-  compositeScore?: number | null
+  colVolAll?: boolean
+  cScore?: number | null
 }) {
   const [open, setOpen] = useState(false)
   const isOpen = forceOpen || open
@@ -240,7 +240,7 @@ export default function ScreenerRow({
         )}
 
         {/* Vol Total tous CEX */}
-        {showVolAll && (
+        {colVolAll && (
           <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
             {data.loading ? <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
               : formatVol(data.volAllExchanges ?? null)}
@@ -303,6 +303,7 @@ export default function ScreenerRow({
     </div>
   )
 }
+ 
  
  
  
