@@ -383,6 +383,13 @@ export default function Home() {
         </div>
 
         {/* Refresh button */}
+        <ColumnPicker active={extraCols} onToggle={col => {
+          setExtraCols(prev => {
+            const next = new Set(prev)
+            next.has(col) ? next.delete(col) : next.add(col)
+            return next
+          })
+        }} />
         <button
           onClick={() => loadAll(symbols)}
           disabled={isLoading}
@@ -420,26 +427,7 @@ export default function Home() {
           {showScoreW    && <SimpleHdr label="Score W" />}
           {showSpotRatio && <ColBtn col="spotRatio" label="Turn-over" />}
           {showRatioFS   && <ColBtn col="ratioFS"   label="Ratio F/S" />}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px' }}>
-            <button
-              onClick={() => setPushMissingToBottom(p => !p)}
-              title="Repousser données manquantes en bas"
-              style={{
-                background: pushMissingToBottom ? 'rgba(255,159,67,0.15)' : 'none',
-                border: `1px solid ${pushMissingToBottom ? '#ff9f43' : 'var(--border)'}`,
-                color: pushMissingToBottom ? '#ff9f43' : 'var(--text-dim)',
-                borderRadius: 4, padding: '2px 7px', cursor: 'pointer',
-                fontSize: 10, fontFamily: "'Dodger', 'Syne', sans-serif",
-              }}
-            >↓?</button>
-            <ColumnPicker active={extraCols} onToggle={col => {
-              setExtraCols(prev => {
-                const next = new Set(prev)
-                next.has(col) ? next.delete(col) : next.add(col)
-                return next
-              })
-            }} />
-          </div>
+          <div style={{ width: 36 }} />
         </div>
 
         {/* Normal rows */}
@@ -651,6 +639,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
