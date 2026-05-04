@@ -50,7 +50,7 @@ function percentileRank(values: number[], val: number): number {
 }
 
 
-// ── Score composite Top 30 ────────────────────────────────────────────────────
+// ── Score composite Rising ────────────────────────────────────────────────────
 // 50% Mom Daily live + 30% Pente Daily (3j) + 20% Mom Weekly live
 function cScore(data: ContractData): number | null {
   const dLive = data.daily?.live
@@ -86,7 +86,7 @@ export default function Home() {
   const [theme, setTheme]                   = useState<'dark' | 'light'>('dark')
   const [pushMissingToBottom, setPushMissingToBottom] = useState(false)
   const [favorites, setFavorites]           = useState<Set<string>>(new Set())
-  const [activeTab, setActiveTab]           = useState<'all' | 'favorites' | 'top30'>('all')
+  const [activeTab, setActiveTab]           = useState<'all' | 'favorites' | 'rising'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [searchQuery, setSearchQuery]       = useState('')
   const [hideMissing, setHideMissing]       = useState(false)
@@ -221,7 +221,7 @@ export default function Home() {
     return true
   }
 
-  function getTop30Rows(): ContractData[] {
+  function getRisingRows(): ContractData[] {
     return Array.from(contracts.values())
       .filter(c => {
         if (c.loading || c.incomplete) return false
@@ -361,7 +361,7 @@ export default function Home() {
 
       {/* Tabs: All / Favorites */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        {(['all', 'favorites', 'top30'] as const).map(tab => (
+        {(['all', 'favorites', 'rising'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
             padding: '5px 14px', borderRadius: 20,
             background: activeTab === tab ? 'var(--accent)' : 'var(--bg-panel)',
@@ -371,7 +371,7 @@ export default function Home() {
             fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 600,
             transition: 'all 0.2s',
           }}>
-            {tab === 'all' ? 'Tous' : tab === 'favorites' ? '★ Favoris' : '🔥 Top 30'}
+            {tab === 'all' ? 'Tous' : tab === 'favorites' ? '★ Favoris' : '🔥 '↑ Rising'}
           </button>
         ))}
 
@@ -477,8 +477,8 @@ export default function Home() {
               aucun résultat
             </div>
           )}
-          {activeTab === 'top30' && (() => {
-          const t30 = getTop30Rows()
+          {activeTab === 'rising' && (() => {
+          const t30 = getRisingRows()
           return t30.length === 0
             ? <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>chargement...</div>
             : t30.map((row, i) => (
@@ -700,6 +700,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
