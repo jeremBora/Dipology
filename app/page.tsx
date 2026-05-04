@@ -371,7 +371,7 @@ export default function Home() {
             fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 600,
             transition: 'all 0.2s',
           }}>
-            {tab === 'all' ? 'Tous' : tab === 'favorites' ? '★ Favoris' : '🔥 '↑ Rising'}
+            {tab === 'all' ? 'Tous' : tab === 'favorites' ? '★ Favoris' : '↑ Rising'}
           </button>
         ))}
 
@@ -700,6 +700,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
