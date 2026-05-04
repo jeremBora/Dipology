@@ -175,6 +175,13 @@ export default function ScreenerRow({
             {data.loading ? <span style={dim}>…</span> : formatVol(data.volSpot)}
           </div>
         )}
+        {/* Vol Total tous CEX */}
+        {showVolAll && (
+          <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
+            {data.loading ? <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
+              : formatVol(data.volAllExchanges ?? null)}
+          </div>
+        )}
 
         {/* Mom D-1 */}
         {showMomDPrev && (
@@ -238,13 +245,6 @@ export default function ScreenerRow({
           </div>
         )}
 
-        {/* Vol Total tous CEX */}
-        {showVolAll && (
-          <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
-            {data.loading ? <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
-              : formatVol(data.volAllExchanges ?? null)}
-          </div>
-        )}
 
         <div />
       </div>
@@ -302,6 +302,7 @@ export default function ScreenerRow({
     </div>
   )
 }
+ 
  
  
  
