@@ -282,7 +282,23 @@ export default function Home() {
         <button
           onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
           style={{ position: 'absolute', top: 28, right: 0, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 15, transition: 'all 0.2s' }}
-        >{theme === 'dark' ? '☀️' : '🌙'}</button>
+        >{theme === 'dark' ? (
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="2.8" stroke="currentColor" strokeWidth="1.2"/>
+              <line x1="7" y1="0.5" x2="7" y2="2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              <line x1="7" y1="12" x2="7" y2="13.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              <line x1="0.5" y1="7" x2="2" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              <line x1="12" y1="7" x2="13.5" y2="7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              <line x1="2.4" y1="2.4" x2="3.4" y2="3.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              <line x1="10.6" y1="10.6" x2="11.6" y2="11.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              <line x1="11.6" y1="2.4" x2="10.6" y2="3.4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+              <line x1="3.4" y1="10.6" x2="2.4" y2="11.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+          ) : (
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M12.5 8.5A6 6 0 015.5 1.5a5.5 5.5 0 100 11 6 6 0 007-4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}</button>
 
         <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: "'Dodger', 'Syne', sans-serif" }}>
           Dipology Screener
@@ -635,5 +651,6 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
