@@ -211,8 +211,8 @@ export default function Home() {
         }
         let va: number | string = 0, vb: number | string = 0
         if (sortKey === 'symbol')    { va = a.symbol;                    vb = b.symbol }
-        if (sortKey === 'momentumD') { va = a.daily?.score     ?? -1;    vb = b.daily?.score     ?? -1 }
-        if (sortKey === 'momentumW') { va = a.weekly?.score    ?? -1;    vb = b.weekly?.score    ?? -1 }
+        if (sortKey === 'momentumD') { va = a.daily?.live      ?? -1;    vb = b.daily?.live      ?? -1 }
+        if (sortKey === 'momentumW') { va = a.weekly?.live     ?? -1;    vb = b.weekly?.live     ?? -1 }
         if (sortKey === 'vol24h')    { va = a.vol24h           ?? 0;     vb = b.vol24h           ?? 0 }
         if (sortKey === 'spotRatio') { va = a.spotRatio        ?? -1;    vb = b.spotRatio        ?? -1 }
         if (sortKey === 'ratioFS')   { va = a.ratioFS          ?? 999999;vb = b.ratioFS          ?? 999999 }
@@ -639,6 +639,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
