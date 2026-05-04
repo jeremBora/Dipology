@@ -494,9 +494,9 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   // > 6% = bear zone (capitaux en stablecoins)
   function usdtSignal(dom: number | undefined) {
     if (dom === undefined || dom === 0) return null
-    if (dom < 5) return { text: 'Bull Zone', color: 'var(--num-green)', dot: '#22c55e' }
-    if (dom <= 6) return { text: 'Neutre', color: '#c8a800', dot: '#eab308' }
-    return { text: 'Bear Zone', color: 'var(--num-red)', dot: '#ef4444' }
+    if (dom < 5) return { text: 'RISK ON', color: '#1c7c3a', dot: '#22c55e', bg: '#f0fdf4', border: '#bbf7d0', label: 'RISK ON' }
+    if (dom <= 6) return { text: 'Neutre', color: '#b07010', dot: '#eab308', bg: '#fef9c3', border: '#fde68a', label: 'Neutre' }
+    return { text: 'RISK OFF', color: '#991b1b', dot: '#ef4444', bg: '#fee2e2', border: '#fca5a5', label: 'RISK OFF' }
   }
 
   const signal = isUSDT ? usdtSignal(dominance) : null
@@ -635,4 +635,5 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
