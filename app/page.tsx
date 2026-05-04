@@ -579,51 +579,51 @@ function PinnedCard({ data, theme, favorite, onFav }: {
 
       {/* USDT.D content - donut chart */}
       {isUSDT && dominance !== undefined && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          {/* Donut */}
-          <div style={{ position: 'relative', width: 90, height: 90, flexShrink: 0 }}>
-            <svg width="90" height="90" viewBox="0 0 90 90" fill="none">
-              {/* BG */}
-              <circle cx="45" cy="45" r="36" stroke={theme === 'dark' ? '#1a1d2e' : '#f0f0f5'} strokeWidth="9" fill="none"/>
-              {/* Altcoin arc (green, faint) */}
-              <circle cx="45" cy="45" r="36"
-                stroke="#22c55e" strokeWidth="9" fill="none" opacity="0.25"
-                strokeDasharray={`${altDash} ${usdtDash + 8}`}
-                strokeDashoffset={-(usdtDash + 6)}
-                strokeLinecap="round"/>
-              {/* USDT arc (amber) */}
-              <circle cx="45" cy="45" r="36"
-                stroke="#ff9f0a" strokeWidth="9" fill="none"
-                strokeDasharray={`${usdtDash - 2} ${circumference}`}
-                strokeDashoffset="56"
-                strokeLinecap="round"/>
-            </svg>
-            {/* Center value */}
-            <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', textAlign: 'center' }}>
-              <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 14, fontWeight: 700, color: '#ff9f0a', lineHeight: 1 }}>
-                {dominance.toFixed(2)}%
-              </div>
-              <div style={{ fontSize: 7, color: 'var(--text-muted)', marginTop: 2, letterSpacing: 0.5 }}>USDT.D</div>
-            </div>
+        <div>
+          {/* Big value + badge */}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
+            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 28, fontWeight: 500, color: signal ? signal.color : 'var(--text-primary)', lineHeight: 1 }}>
+              {dominance.toFixed(2)}%
+            </span>
+            {signal && (
+              <span style={{ fontSize: 9, fontWeight: 600, padding: '3px 9px', borderRadius: 20, background: signal.bg, color: signal.color, border: `0.5px solid ${signal.border}`, letterSpacing: 0.5 }}>
+                ◆ {signal.label}
+              </span>
+            )}
           </div>
 
-          {/* Info */}
-          <div style={{ flex: 1 }}>
-            {/* Pills */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 8, padding: '2px 8px', borderRadius: 20, background: 'rgba(255,159,67,0.12)', color: '#ff9f0a', border: '0.5px solid rgba(255,159,67,0.3)', fontWeight: 600 }}>
-                USDT {dominance.toFixed(2)}%
-              </span>
-              <span style={{ fontSize: 8, padding: '2px 8px', borderRadius: 20, background: 'rgba(34,197,94,0.08)', color: '#22c55e', border: '0.5px solid rgba(34,197,94,0.2)', fontWeight: 600 }}>
-                Alts {(100 - dominance).toFixed(2)}%
-              </span>
-            </div>
-            {/* Thresholds */}
-            <div style={{ fontSize: 9, color: 'var(--text-dim)', lineHeight: 1.9 }}>
-              <span style={{ color: '#22c55e' }}>◆</span> &lt; 5% → Bull zone<br/>
-              <span style={{ color: '#eab308' }}>◆</span> 5–6% → Neutre<br/>
-              <span style={{ color: '#ef4444' }}>◆</span> &gt; 6% → Bear zone
-            </div>
+          {/* Segment scale labels */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 7.5, color: 'var(--text-dim)', marginBottom: 4, padding: '0 1px' }}>
+            <span>0%</span><span>5%</span><span>6%</span><span>10%</span>
+          </div>
+
+          {/* Segments */}
+          <div style={{ display: 'flex', gap: 3, marginBottom: 5 }}>
+            {[0,1,2,3,4,5,6,7,8,9].map(i => {
+              const segVal = (i + 1)
+              const filled = dominance >= segVal - 1
+              let color = '#e5e5ea'
+              if (i < 5) color = filled ? '#22c55e' : '#e5e5ea'
+              else if (i < 7) color = filled ? '#f59e0b' : '#e5e5ea'
+              else color = filled ? '#ef4444' : '#e5e5ea'
+              const isActive = Math.floor(dominance) === i || (i === 9 && dominance >= 9)
+              return (
+                <div key={i} style={{
+                  flex: 1, height: isActive ? 11 : 7,
+                  marginTop: isActive ? -2 : 0,
+                  borderRadius: 3.5, background: color,
+                  boxShadow: isActive ? `0 0 8px ${color}88` : 'none',
+                  transition: 'all 0.3s',
+                }} />
+              )
+            })}
+          </div>
+
+          {/* Zone labels */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 8, fontWeight: 500 }}>
+            <span style={{ color: '#22c55e' }}>◆ RISK ON</span>
+            <span style={{ color: '#f59e0b' }}>◆ Neutre</span>
+            <span style={{ color: '#ef4444' }}>◆ RISK OFF</span>
           </div>
         </div>
       )}
@@ -635,3 +635,4 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
