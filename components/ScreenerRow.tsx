@@ -138,11 +138,7 @@ export default function ScreenerRow({
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: isFavorite ? '#f0a020' : 'var(--text-dim)', padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
           >{isFavorite ? '★' : '☆'}</button>
 
-          {rank !== undefined && (
-            <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, color: rank <= 5 ? 'var(--accent)' : 'var(--text-dim)', minWidth: 16, textAlign: 'right', flexShrink: 0 }}>
-              {rank}
-            </span>
-          )}
+          {rank && <span style={{ fontFamily: "Space Mono, monospace", fontSize: 9, color: "var(--text-dim)", minWidth: 16, flexShrink: 0 }}>{rank}</span>}
           {!forceOpen && (
             <span style={{ fontSize: 7, color: isOpen ? 'var(--accent-dim)' : 'var(--text-dim)', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▶</span>
           )}
@@ -309,6 +305,7 @@ export default function ScreenerRow({
     </div>
   )
 }
+ 
  
  
  
