@@ -584,18 +584,73 @@ function PinnedCard({ data, theme, favorite, onFav }: {
             ))}
           </div>
           <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>
-          {[{ label: 'D', cells: dCells, score: dScore }, { label: 'W', cells: wCells, score: wScore }].map(row => (
-            <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'center', marginBottom: 3 }}>
-              <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace" }}>{row.label}</span>
-              {row.cells.slice(0, 9).map((v, i) => (
-                <div key={i} style={{ flex: 1, height: 18, borderRadius: 2, background: cellColor(v) }} />
-              ))}
-              <div style={{ width: 4, flexShrink: 0 }} />
-              <div style={{ flex: 1, height: 18, borderRadius: 2, background: cellColor(row.cells[9] ?? null), border: `1px solid ${accentColor}66` }} />
-              <div style={{ flex: 1.5, height: 18, borderRadius: 2, background: theme === 'dark' ? '#0a0f1e' : '#f0f4f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {[{ label: 'D', cells: dCells, rawCells: dHist, score: dScore }, { label: 'W', cells: wCells, rawCells: wHist, score: wScore }].map(row => (
+            <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'stretch', marginBottom: 3 }}>
+              <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace", display: 'flex', alignItems: 'center' }}>{row.label}</span>
+              {row.cells.slice(0, 9).map((v, i) => {
+                const raw = row.rawCells[row.rawCells.length - 9 + i] ?? null
+                if (v === null || raw === null) return (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px' }}>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'Space Mono, monospace' }}>—</span>
+                    <div style={{ width: '80%', height: 2, borderRadius: 1, background: 'var(--border)' }} />
+                  </div>
+                )
+                const rVal = raw
+                let r = 96, g = 96, b = 96
+                if (rVal >= 70) { r=32; g=124; b=32 }
+                else if (rVal >= 60) { r=64; g=128; b=64 }
+                else if (rVal >= 50) { r=80; g=110; b=80 }
+                else if (rVal >= 40) { r=110; g=80; b=80 }
+                else if (rVal >= 30) { r=124; g=32; b=32 }
+                else { r=104; g=14; b=14 }
+                const pct = Math.min(Math.round(rVal), 100)
+                const textC = rVal >= 50 ? `rgb(${Math.round(140+rVal*0.5)},255,${Math.round(140+rVal*0.5)})` : `rgb(255,${Math.round(120+rVal*0.7)},${Math.round(120+rVal*0.7)})`
+                return (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px' }}>
+                    <span style={{ fontSize: 9, fontWeight: 600, color: textC, fontFamily: 'Space Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
+                    <div style={{ width: '80%', height: 2, borderRadius: 1, background: `rgba(${r},${g},${b},0.2)` }}>
+                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: 1, background: `rgb(${r},${g},${b})` }} />
+                    </div>
+                  </div>
+                )
+              })}
+              <div style={{ width: 1, background: 'var(--border)', flexShrink: 0, margin: '0 2px' }} />
+              {(() => {
+                const v = row.cells[9] ?? null
+                const raw = v
+                if (v === null || raw === null) return (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px', border: '1px solid var(--border)', borderRadius: 4 }}>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'Space Mono, monospace' }}>—</span>
+                    <div style={{ width: '80%', height: 2, borderRadius: 1, background: 'var(--border)' }} />
+                  </div>
+                )
+                let r = 96, g = 96, b = 96
+                if (raw >= 70) { r=32; g=124; b=32 }
+                else if (raw >= 60) { r=64; g=128; b=64 }
+                else if (raw >= 50) { r=80; g=110; b=80 }
+                else if (raw >= 40) { r=110; g=80; b=80 }
+                else if (raw >= 30) { r=124; g=32; b=32 }
+                else { r=104; g=14; b=14 }
+                const pct = Math.min(Math.round(raw), 100)
+                const textC = raw >= 50 ? `rgb(${Math.round(140+raw*0.5)},255,${Math.round(140+raw*0.5)})` : `rgb(255,${Math.round(120+raw*0.7)},${Math.round(120+raw*0.7)})`
+                return (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px', border: `1px solid rgba(${r},${g},${b},0.5)`, borderRadius: 4, background: `rgba(${r},${g},${b},0.06)` }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: textC, fontFamily: 'Space Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
+                    <div style={{ width: '80%', height: 2, borderRadius: 1, background: `rgba(${r},${g},${b},0.2)` }}>
+                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: 1, background: `rgb(${r},${g},${b})` }} />
+                    </div>
+                  </div>
+                )
+              })()}
+              <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 4px', background: theme === 'dark' ? '#0a0f1e' : '#f0f4f0', borderRadius: 4 }}>
                 <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700, color: accentColor }}>
-                  {row.score !== null && row.score !== undefined ? row.score.toFixed(1) + '%' : '—'}
+                  {row.score !== null && row.score !== undefined ? (row.score/10).toFixed(2) : '—'}
                 </span>
+                {row.score !== null && row.score !== undefined && (
+                  <div style={{ width: '80%', height: 2, borderRadius: 1, background: 'var(--border)' }}>
+                    <div style={{ width: `${Math.min(row.score, 100)}%`, height: '100%', borderRadius: 1, background: accentColor }} />
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -660,6 +715,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
