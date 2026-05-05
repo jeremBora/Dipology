@@ -660,8 +660,79 @@ function PinnedCard({ data, theme, favorite, onFav }: {
       {/* USDT.D content - donut chart */}
       {isUSDT && dominance !== undefined && (
         <div>
+          {/* Heatmap D et W comme BTC */}
+          <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>
+          {[{ label: 'D', cells: dCells, rawCells: dHist, score: dScore }, { label: 'W', cells: wCells, rawCells: wHist, score: wScore }].map(row => (
+            <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'stretch', marginBottom: 3 }}>
+              <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace", display: 'flex', alignItems: 'center' }}>{row.label}</span>
+              {row.cells.slice(0, 9).map((v, i) => {
+                const raw = row.rawCells[row.rawCells.length - 9 + i] ?? null
+                if (v === null || raw === null) return (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px' }}>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'Space Mono, monospace' }}>—</span>
+                    <div style={{ width: '80%', height: 2, borderRadius: 1, background: 'var(--border)' }} />
+                  </div>
+                )
+                let r = 96, g = 96, b = 96
+                if (raw >= 70) { r=32; g=124; b=32 }
+                else if (raw >= 60) { r=64; g=128; b=64 }
+                else if (raw >= 50) { r=80; g=110; b=80 }
+                else if (raw >= 40) { r=110; g=80; b=80 }
+                else if (raw >= 30) { r=124; g=32; b=32 }
+                else { r=104; g=14; b=14 }
+                const pct = Math.min(Math.round(raw), 100)
+                const textC = raw >= 50 ? `rgb(${Math.round(140+raw*0.5)},255,${Math.round(140+raw*0.5)})` : `rgb(255,${Math.round(120+raw*0.7)},${Math.round(120+raw*0.7)})`
+                return (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px' }}>
+                    <span style={{ fontSize: 9, fontWeight: 600, color: textC, fontFamily: 'Space Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
+                    <div style={{ width: '80%', height: 2, borderRadius: 1, background: `rgba(${r},${g},${b},0.2)` }}>
+                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: 1, background: `rgb(${r},${g},${b})` }} />
+                    </div>
+                  </div>
+                )
+              })}
+              <div style={{ width: 1, background: 'var(--border)', flexShrink: 0, margin: '0 2px' }} />
+              {(() => {
+                const v = row.cells[9] ?? null
+                if (v === null) return (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px', border: '1px solid var(--border)', borderRadius: 4 }}>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'Space Mono, monospace' }}>—</span>
+                    <div style={{ width: '80%', height: 2, borderRadius: 1, background: 'var(--border)' }} />
+                  </div>
+                )
+                let r = 96, g = 96, b = 96
+                if (v >= 70) { r=32; g=124; b=32 }
+                else if (v >= 60) { r=64; g=128; b=64 }
+                else if (v >= 50) { r=80; g=110; b=80 }
+                else if (v >= 40) { r=110; g=80; b=80 }
+                else if (v >= 30) { r=124; g=32; b=32 }
+                else { r=104; g=14; b=14 }
+                const pct = Math.min(Math.round(v), 100)
+                const textC = v >= 50 ? `rgb(${Math.round(140+v*0.5)},255,${Math.round(140+v*0.5)})` : `rgb(255,${Math.round(120+v*0.7)},${Math.round(120+v*0.7)})`
+                return (
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px', border: `1px solid rgba(${r},${g},${b},0.5)`, borderRadius: 4, background: `rgba(${r},${g},${b},0.06)` }}>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: textC, fontFamily: 'Space Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
+                    <div style={{ width: '80%', height: 2, borderRadius: 1, background: `rgba(${r},${g},${b},0.2)` }}>
+                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: 1, background: `rgb(${r},${g},${b})` }} />
+                    </div>
+                  </div>
+                )
+              })()}
+              <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 4px', background: theme === 'dark' ? '#0a0f1e' : '#f0f4f0', borderRadius: 4 }}>
+                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700, color: '#ff9f0a' }}>
+                  {row.score !== null && row.score !== undefined ? (row.score/10).toFixed(2) : '—'}
+                </span>
+                {row.score !== null && row.score !== undefined && (
+                  <div style={{ width: '80%', height: 2, borderRadius: 1, background: 'var(--border)' }}>
+                    <div style={{ width: `${Math.min(row.score, 100)}%`, height: '100%', borderRadius: 1, background: '#ff9f0a' }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+
           {/* Jauge segments */}
-          <div style={{ marginBottom: 12 }}>
+          <div style={{ marginTop: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 7.5, color: 'var(--text-dim)', marginBottom: 4 }}>
               <span>0%</span><span>5%</span><span>6%</span><span>10%</span>
             </div>
@@ -674,12 +745,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
                 else color = filled ? '#ef4444' : 'var(--border)'
                 const isActive = Math.floor(dominance) === i
                 return (
-                  <div key={i} style={{
-                    flex: 1, height: isActive ? 10 : 6,
-                    marginTop: isActive ? -2 : 0,
-                    borderRadius: 3, background: color,
-                    boxShadow: isActive ? `0 0 6px ${color}88` : 'none',
-                  }} />
+                  <div key={i} style={{ flex: 1, height: isActive ? 10 : 6, marginTop: isActive ? -2 : 0, borderRadius: 3, background: color, boxShadow: isActive ? `0 0 6px ${color}88` : 'none' }} />
                 )
               })}
             </div>
@@ -699,6 +765,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
