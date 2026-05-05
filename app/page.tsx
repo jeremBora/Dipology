@@ -342,7 +342,7 @@ export default function Home() {
 
       {/* Tabs: All / Favorites */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        {(['all', 'favorites', 'favorites'] as const).map(tab => (
+        {(['all', 'favorites'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
             padding: '5px 14px', borderRadius: 20,
             background: activeTab === tab ? 'var(--accent)' : 'var(--bg-panel)',
@@ -574,8 +574,8 @@ function PinnedCard({ data, theme, favorite, onFav }: {
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
             {[
-              { label: 'Mom Daily', val: fmtMom(dLive), color: momColor(dLive) },
-              { label: 'Mom Weekly', val: fmtMom(wLive), color: momColor(wLive) },
+              { label: 'Momentum Daily', val: fmtMom(dLive), color: momColor(dLive) },
+              { label: 'Momentum Weekly', val: fmtMom(wLive), color: momColor(wLive) },
             ].map(m => (
               <div key={m.label} style={{ background: theme === 'dark' ? '#0a0f1e' : '#f5f9f5', borderRadius: 6, padding: '6px 10px' }}>
                 <div style={{ fontSize: 8, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 3 }}>{m.label}</div>
@@ -584,7 +584,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
             ))}
           </div>
           <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>
-            Momentum Heatmap {isUSDT && <span style={{fontSize:8,color:'var(--text-dim)'}}>({dHist.length}D {wHist.length}W)</span>}
+            Momentum Heatmap
           </div>
           {[{ label: 'D', cells: dCells, rawCells: dHist, score: dScore }, { label: 'W', cells: wCells, rawCells: wHist, score: wScore }].map(row => (
             <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'stretch', marginBottom: 3 }}>
@@ -664,7 +664,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
         <div>
           {/* Heatmap D et W comme BTC */}
           <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>
-            Momentum Heatmap {isUSDT && <span style={{fontSize:8,color:'var(--text-dim)'}}>({dHist.length}D {wHist.length}W)</span>}
+            Momentum Heatmap
           </div>
           {[{ label: 'D', cells: dCells, rawCells: dHist, score: dScore }, { label: 'W', cells: wCells, rawCells: wHist, score: wScore }].map(row => (
             <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'stretch', marginBottom: 3 }}>
@@ -769,6 +769,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
