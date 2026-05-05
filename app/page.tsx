@@ -583,7 +583,9 @@ function PinnedCard({ data, theme, favorite, onFav }: {
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>
+          <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>
+            Momentum Heatmap {isUSDT && <span style={{fontSize:8,color:'var(--text-dim)'}}>({dHist.length}D {wHist.length}W)</span>}
+          </div>
           {[{ label: 'D', cells: dCells, rawCells: dHist, score: dScore }, { label: 'W', cells: wCells, rawCells: wHist, score: wScore }].map(row => (
             <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'stretch', marginBottom: 3 }}>
               <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace", display: 'flex', alignItems: 'center' }}>{row.label}</span>
@@ -661,7 +663,9 @@ function PinnedCard({ data, theme, favorite, onFav }: {
       {isUSDT && dominance !== undefined && (
         <div>
           {/* Heatmap D et W comme BTC */}
-          <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>
+          <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>
+            Momentum Heatmap {isUSDT && <span style={{fontSize:8,color:'var(--text-dim)'}}>({dHist.length}D {wHist.length}W)</span>}
+          </div>
           {[{ label: 'D', cells: dCells, rawCells: dHist, score: dScore }, { label: 'W', cells: wCells, rawCells: wHist, score: wScore }].map(row => (
             <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'stretch', marginBottom: 3 }}>
               <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace", display: 'flex', alignItems: 'center' }}>{row.label}</span>
@@ -765,6 +769,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
