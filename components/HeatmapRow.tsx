@@ -30,39 +30,37 @@ function rsiRGB(v: number): [number, number, number] {
   return [80,0,0]
 }
 
-function cellTextColor(v: number): string {
-  // Use white for dark cells, slightly off-white for mid cells
-  return 'rgba(255,255,255,0.9)'
+function rsiText(v: number): string {
+  if (v >= 50) return `rgb(${Math.round(140 + v * 0.5)},255,${Math.round(140 + v * 0.5)})`
+  return `rgb(255,${Math.round(120 + v * 0.7)},${Math.round(120 + v * 0.7)})`
 }
 
 function BarCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: number | null }) {
   if (valueT === null || valueRaw === null) {
     return (
-      <div style={{
-        flex:1, textAlign:'center', padding:'3px 1px',
-        display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-        minHeight: 28,
-      }}>
-        <span style={{ fontSize:9, color:'var(--text-dim)', fontFamily:'Space Mono, monospace' }}>—</span>
+      <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
+        display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-dim)', fontFamily:'Space Mono, monospace' }}>—</span>
+        <div style={{ width:'80%', height:3, borderRadius:2, background:'var(--border)' }} />
       </div>
     )
   }
   const [r,g,b] = rsiRGB(valueRaw)
+  const pct = Math.min(Math.round(valueRaw), 100)
+  const textC = rsiText(valueRaw)
   const mom = (valueT / 10).toFixed(1)
   return (
-    <div style={{
-      flex:1, textAlign:'center', padding:'2px 1px',
-      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-      background:`rgb(${r},${g},${b})`,
-      borderRadius: 3, minHeight: 28,
-    }}>
-      <span style={{
-        fontSize: 10, fontWeight: 700,
-        color: cellTextColor(valueRaw),
-        fontFamily:'Space Mono, monospace', lineHeight: 1,
-      }}>
+    <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
+      display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+      <span style={{ fontSize:13, fontWeight:600, color:textC,
+        fontFamily:'Space Mono, monospace', lineHeight:1 }}>
         {mom}
       </span>
+      <div style={{ width:'80%', height:3, borderRadius:2,
+        background:`rgba(${r},${g},${b},0.2)` }}>
+        <div style={{ width:`${pct}%`, height:'100%', borderRadius:2,
+          background:`rgb(${r},${g},${b})` }} />
+      </div>
     </div>
   )
 }
@@ -70,33 +68,32 @@ function BarCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: number
 function LiveCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: number | null }) {
   if (valueT === null || valueRaw === null) {
     return (
-      <div style={{
-        flex:1, textAlign:'center', padding:'3px 1px',
-        display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-        border:'1px solid var(--border)', borderRadius:4, minHeight: 28,
-      }}>
-        <span style={{ fontSize:9, color:'var(--text-dim)', fontFamily:'Space Mono, monospace' }}>—</span>
+      <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
+        display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+        border:'1px solid var(--border)', borderRadius:6 }}>
+        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-dim)', fontFamily:'Space Mono, monospace' }}>—</span>
+        <div style={{ width:'80%', height:3, borderRadius:2, background:'var(--border)' }} />
       </div>
     )
   }
   const [r,g,b] = rsiRGB(valueRaw)
+  const pct = Math.min(Math.round(valueRaw), 100)
+  const textC = rsiText(valueRaw)
   const mom = (valueT / 10).toFixed(1)
   return (
-    <div style={{
-      flex:1, textAlign:'center', padding:'2px 1px',
-      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-      background:`rgb(${r},${g},${b})`,
-      border:`2px solid rgba(${r},${g},${b},0.3)`,
-      borderRadius: 4, minHeight: 28,
-      boxShadow: `0 0 8px rgba(${r},${g},${b},0.4)`,
-    }}>
-      <span style={{
-        fontSize: 11, fontWeight: 700,
-        color: cellTextColor(valueRaw),
-        fontFamily:'Space Mono, monospace', lineHeight: 1,
-      }}>
+    <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
+      display:'flex', flexDirection:'column', alignItems:'center', gap:4,
+      border:`1px solid rgba(${r},${g},${b},0.5)`, borderRadius:6,
+      background:`rgba(${r},${g},${b},0.06)` }}>
+      <span style={{ fontSize:13, fontWeight:700, color:textC,
+        fontFamily:'Space Mono, monospace', lineHeight:1 }}>
         {mom}
       </span>
+      <div style={{ width:'80%', height:3, borderRadius:2,
+        background:`rgba(${r},${g},${b},0.2)` }}>
+        <div style={{ width:`${pct}%`, height:'100%', borderRadius:2,
+          background:`rgb(${r},${g},${b})` }} />
+      </div>
     </div>
   )
 }
@@ -104,30 +101,28 @@ function LiveCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: numbe
 function ScoreCell({ score }: { score: number | null }) {
   if (score === null) {
     return (
-      <div style={{
-        flex:1.5, textAlign:'center', padding:'3px 4px',
-        display:'flex', alignItems:'center', justifyContent:'center',
-      }}>
-        <span style={{ fontSize:9, color:'var(--text-dim)', fontFamily:'Space Mono, monospace' }}>—</span>
+      <div style={{ flex:1.5, textAlign:'center', padding:'4px 4px 3px',
+        display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-dim)', fontFamily:'Space Mono, monospace' }}>—</span>
+        <div style={{ width:'80%', height:3, borderRadius:2, background:'var(--border)' }} />
       </div>
     )
   }
   const [r,g,b] = rsiRGB(score)
+  const pct = Math.min(Math.round(score), 100)
+  const textC = rsiText(score)
   return (
-    <div style={{
-      flex:1.5, textAlign:'center', padding:'2px 4px',
-      display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center',
-      background:`rgba(${r},${g},${b},0.15)`,
-      borderRadius: 4, minHeight: 28,
-      border: `1px solid rgba(${r},${g},${b},0.3)`,
-    }}>
-      <span style={{
-        fontSize: 11, fontWeight: 700,
-        color:`rgb(${r},${g},${b})`,
-        fontFamily:'Space Mono, monospace', lineHeight: 1,
-      }}>
+    <div style={{ flex:1.5, textAlign:'center', padding:'4px 4px 3px',
+      display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+      <span style={{ fontSize:13, fontWeight:700, color:textC,
+        fontFamily:'Space Mono, monospace', lineHeight:1 }}>
         {(score/10).toFixed(2)}
       </span>
+      <div style={{ width:'80%', height:3, borderRadius:2,
+        background:`rgba(${r},${g},${b},0.2)` }}>
+        <div style={{ width:`${pct}%`, height:'100%', borderRadius:2,
+          background:`rgb(${r},${g},${b})` }} />
+      </div>
     </div>
   )
 }
@@ -137,13 +132,10 @@ export default function HeatmapRow({ label, historyT, liveT, score, history, liv
   const hist9Raw = history.length  < 9 ? [...Array(9 - history.length).fill(null),  ...history]  : history.slice(-9)
 
   return (
-    <div style={{ display:'flex', gap:2, alignItems:'stretch' }}>
-      <div style={{
-        width:18, textAlign:'center', fontSize:10, fontWeight:600,
-        color:'var(--text-muted)', flexShrink:0,
-        display:'flex', alignItems:'center', justifyContent:'center',
-        letterSpacing:1, fontFamily:'Space Mono, monospace',
-      }}>{label}</div>
+    <div style={{ display:'flex', gap:3, alignItems:'stretch' }}>
+      <div style={{ width:18, textAlign:'center', fontSize:11, fontWeight:600,
+        color:'var(--text-muted)', flexShrink:0, display:'flex', alignItems:'center',
+        justifyContent:'center', letterSpacing:1 }}>{label}</div>
 
       {hist9T.map((vT, i) => <BarCell key={i} valueT={vT} valueRaw={hist9Raw[i]} />)}
 
