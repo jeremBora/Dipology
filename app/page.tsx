@@ -86,7 +86,7 @@ export default function Home() {
   const [theme, setTheme]                   = useState<'dark' | 'light'>('dark')
   const [pushMissingToBottom, setPushMissingToBottom] = useState(false)
   const [favorites, setFavorites]           = useState<Set<string>>(new Set())
-  const [activeTab, setActiveTab]           = useState<'all' | 'favorites' | 'rising'>('all')
+  const [activeTab, setActiveTab]           = useState<'all' | 'favorites'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [searchQuery, setSearchQuery]       = useState('')
   const [hideMissing, setHideMissing]       = useState(false)
@@ -221,26 +221,7 @@ export default function Home() {
     return true
   }
 
-  function getRisingRows(): ContractData[] {
-    return Array.from(contracts.values())
-      .filter(c => {
-        if (c.loading || c.incomplete) return false
-        if (PINNED_SYMBOLS.includes(c.symbol)) return false
-        const dLive = c.daily?.live
-        const wLive = c.weekly?.live
-        const vol   = c.vol24h ?? 0
-        if (dLive === null || dLive === undefined || dLive / 10 < 5) return false
-        if (wLive === null || wLive === undefined || wLive / 10 < 4) return false
-        if (vol < 10_000_000) return false
-        return true
-      })
-      .map(c => ({ ...c, _cScore: cScore(c) }))
-      .filter((c): c is ContractData & { _cScore: number } => c._cScore !== null)
-      .sort((a, b) => (b as ContractData & { _cScore: number })._cScore - (a as ContractData & { _cScore: number })._cScore)
-      .slice(0, 30)
-  }
-
-  function getSortedRows(): { pinned: ContractData[]; normal: ContractData[] } {
+    function getSortedRows(): { pinned: ContractData[]; normal: ContractData[] } {
     const all = Array.from(contracts.values()).filter(c => !c.loading)
     const pinned = PINNED_SYMBOLS
       .map(sym => contracts.get(sym))
@@ -361,7 +342,7 @@ export default function Home() {
 
       {/* Tabs: All / Favorites */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        {(['all', 'favorites', 'rising'] as const).map(tab => (
+        {(['all', 'favorites', 'favorites'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
             padding: '5px 14px', borderRadius: 20,
             background: activeTab === tab ? 'var(--accent)' : 'var(--bg-panel)',
@@ -477,28 +458,7 @@ export default function Home() {
               aucun résultat
             </div>
           )}
-          {activeTab === 'rising' && (() => {
-          const t30 = getRisingRows()
-          return t30.length === 0
-            ? <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>chargement...</div>
-            : t30.map((row, i) => (
-                <ScreenerRow
-                  key={row.symbol}
-                  data={row}
-                  index={i}
-                  extraCols={extraCols}
-                  gridCols={gridCols}
-                  forceOpen={false}
-                  isPinned={false}
-                  colVolAll={colVolAll}
-                  isFavorite={favorites.has(row.symbol)}
-                  onToggleFavorite={() => toggleFavorite(row.symbol)}
-                  cScore={cScore(row)}
-                />
-              ))
-        })()}
-
-        {activeTab !== 'rising' && normal.map((row, i) => (
+                  {normal.map((row, i) => (
             <ScreenerRow
               key={row.symbol}
               data={row}
@@ -700,6 +660,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
