@@ -155,13 +155,13 @@ export async function GET(req: NextRequest) {
     try {
       const { dominance, dailyCloses, weeklyCloses } = await fetchUsdtDominanceWithRSI()
 
-      // Calcul RSI sur l'historique de dominance
-      const rsiD = dailyCloses.length >= MIN_BARS.D
-        ? computeRsi(dailyCloses, 14, MIN_BARS.D)
+      // Calcul RSI sur l'historique de dominance — seuil abaissé à 20
+      const rsiD = dailyCloses.length >= 20
+        ? computeRsi(dailyCloses, 14, 20)
         : { history: [], live: null, score: null, count: 0, incomplete: true }
 
-      const rsiW = weeklyCloses.length >= MIN_BARS.W
-        ? computeRsi(weeklyCloses, 14, MIN_BARS.W)
+      const rsiW = weeklyCloses.length >= 5
+        ? computeRsi(weeklyCloses, 14, 5)
         : { history: [], live: null, score: null, count: 0, incomplete: true }
 
       return Response.json({
@@ -228,3 +228,4 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: String(err) }, { status: 500 })
   }
 }
+ 
