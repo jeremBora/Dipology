@@ -79,21 +79,17 @@ async function fetchUsdtDominanceWithRSI(): Promise<{
     // Historique dominance journalier
     let dailyCloses: number[] = []
 
-    if (usdtRes.ok && totalRes.ok) {
+    if (usdtRes.ok) {
       const usdtData = await usdtRes.json()
-      const totalData = await totalRes.json()
       const usdtMcaps: [number, number][] = usdtData.market_caps || []
-      const totalMcaps: [number, number][] = totalData.market_cap_chart?.market_cap || []
-      const minLen = Math.min(usdtMcaps.length, totalMcaps.length)
-
-      for (let i = 0; i < minLen; i++) {
+      // Utilise le ratio actuel dominance/mcapUSDT pour reconstruire l'historique
+      const currentUsdtMc = usdtMcaps[usdtMcaps.length - 1]?.[1] || 1
+      // dominance actuelle = 7.x% -> on scale l'historique proportionnellement
+      for (let i = 0; i < usdtMcaps.length; i++) {
         const usdtMc = usdtMcaps[i][1]
-        const totalMc = totalMcaps[i][1]
-        // Approx: stablecoins = 15% du total historiquement
-        const approxNonStable = totalMc * 0.85
-        if (approxNonStable > 0) {
-          dailyCloses.push(Math.round((usdtMc / approxNonStable) * 10000) / 100)
-        }
+        // Approximation: dominance historique ~ (usdtMc / currentUsdtMc) * dominance actuelle
+        const approxDom = (usdtMc / currentUsdtMc) * dominance
+        dailyCloses.push(Math.round(approxDom * 100) / 100)
       }
     }
 
@@ -228,4 +224,5 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: String(err) }, { status: 500 })
   }
 }
+ 
  
