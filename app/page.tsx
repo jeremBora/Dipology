@@ -659,13 +659,21 @@ function PinnedCard({ data, theme, favorite, onFav }: {
         </>
       )}
 
-      {/* USDT.D content - donut chart */}
+      {/* USDT.D content */}
       {isUSDT && dominance !== undefined && (
-        <div>
-          {/* Heatmap D et W comme BTC */}
-          <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>
-            Momentum Heatmap
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+            {[
+              { label: 'Momentum Daily', val: fmtMom(dLive), color: momColor(dLive) },
+              { label: 'Momentum Weekly', val: fmtMom(wLive), color: momColor(wLive) },
+            ].map(m => (
+              <div key={m.label} style={{ background: theme === 'dark' ? '#0a0f1e' : '#f5f9f5', borderRadius: 6, padding: '6px 10px' }}>
+                <div style={{ fontSize: 8, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 3 }}>{m.label}</div>
+                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 15, fontWeight: 700, color: m.color }}>{m.val}</div>
+              </div>
+            ))}
           </div>
+          <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>
           {[{ label: 'D', cells: dCells, rawCells: dHist, score: dScore }, { label: 'W', cells: wCells, rawCells: wHist, score: wScore }].map(row => (
             <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'stretch', marginBottom: 3 }}>
               <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace", display: 'flex', alignItems: 'center' }}>{row.label}</span>
@@ -734,34 +742,8 @@ function PinnedCard({ data, theme, favorite, onFav }: {
               </div>
             </div>
           ))}
-
-          {/* Jauge segments */}
-          <div style={{ marginTop: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 7.5, color: 'var(--text-dim)', marginBottom: 4 }}>
-              <span>0%</span><span>5%</span><span>6%</span><span>10%</span>
-            </div>
-            <div style={{ display: 'flex', gap: 3, marginBottom: 5 }}>
-              {[0,1,2,3,4,5,6,7,8,9].map(i => {
-                const filled = dominance >= i
-                let color = 'var(--border)'
-                if (i < 5) color = filled ? '#22c55e' : 'var(--border)'
-                else if (i < 7) color = filled ? '#f59e0b' : 'var(--border)'
-                else color = filled ? '#ef4444' : 'var(--border)'
-                const isActive = Math.floor(dominance) === i
-                return (
-                  <div key={i} style={{ flex: 1, height: isActive ? 10 : 6, marginTop: isActive ? -2 : 0, borderRadius: 3, background: color, boxShadow: isActive ? `0 0 6px ${color}88` : 'none' }} />
-                )
-              })}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 7.5, fontWeight: 500 }}>
-              <span style={{ color: '#22c55e' }}>◆ RISK ON</span>
-              <span style={{ color: '#f59e0b' }}>◆ Neutre</span>
-              <span style={{ color: '#ef4444' }}>◆ RISK OFF</span>
-            </div>
-          </div>
-        </div>
+        </>
       )}
-
       {isUSDT && (dominance === undefined || dominance === 0) && (
         <div style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', padding: '20px 0' }}>chargement…</div>
       )}
@@ -769,6 +751,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
