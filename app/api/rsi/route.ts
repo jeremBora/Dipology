@@ -98,7 +98,8 @@ async function fetchUsdtDominanceWithRSI(): Promise<{
     for (let i = 0; i < dailyCloses.length; i += 7) {
       weeklyCloses.push(dailyCloses[i])
     }
-    if (dailyCloses.length > 0) {
+    // Ajoute le dernier point comme live
+    if (dailyCloses.length > 0 && weeklyCloses[weeklyCloses.length-1] !== dailyCloses[dailyCloses.length-1]) {
       weeklyCloses.push(dailyCloses[dailyCloses.length - 1])
     }
 
@@ -156,8 +157,8 @@ export async function GET(req: NextRequest) {
         ? computeRsi(dailyCloses, 14, 20)
         : { history: [], live: null, score: null, count: 0, incomplete: true }
 
-      const rsiW = weeklyCloses.length >= 5
-        ? computeRsi(weeklyCloses, 14, 5)
+      const rsiW = weeklyCloses.length >= 3
+        ? computeRsi(weeklyCloses, 3, 3)
         : { history: [], live: null, score: null, count: 0, incomplete: true }
 
       return Response.json({
@@ -224,5 +225,6 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: String(err) }, { status: 500 })
   }
 }
+ 
  
  
