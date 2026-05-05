@@ -12,14 +12,9 @@ const HEADERS = {
   'Accept': 'application/json',
 }
 
-// Tokens délistés du spot Binance — ne pas chercher leur vol spot
 const SPOT_DELISTED = new Set(['XMR', 'BCHSV', 'NPXS'])
-
-// Catégories RWA — pas de vol spot/futures pertinent
-const RWA_SYMBOLS = new Set([
-  'PAXGUSDT', 'XAUTUSDT', 'ONDOUSDT', 'POLYXUSDT',
-  'CFGUSDT', 'MPLUSDT', 'TRUUSDT', 'CPOOLUSDT',
-])
+const RWA_SYMBOLS = new Set(['PAXGUSDT', 'XAUTUSDT', 'ONDOUSDT', 'POLYXUSDT', 'CFGUSDT', 'MPLUSDT', 'TRUUSDT', 'CPOOLUSDT'])
+const STABLECOINS = ['usdt', 'usdc', 'dai', 'busd', 'fdusd', 'tusd', 'usdp', 'gusd', 'usde', 'pyusd']
 
 async function fetchCloses(symbol: string, interval: string, limit: number): Promise<number[]> {
   const url = `${FUTURES}/fapi/v1/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`
@@ -40,13 +35,9 @@ async function fetchFuturesVol(symbol: string): Promise<number> {
 }
 
 async function fetchSpotVol(symbol: string): Promise<number | null> {
-  // Skip tokens délistés du spot Binance
   const base = symbol.replace('USDT', '')
   if (SPOT_DELISTED.has(base)) return null
-
-  // Skip RWA — pas pertinent
   if (RWA_SYMBOLS.has(symbol)) return null
-
   try {
     const url = `${SPOT}/api/v3/ticker/24hr?symbol=${symbol}`
     const res = await fetch(url, { headers: HEADERS, next: { revalidate: 30 } })
@@ -57,76 +48,101 @@ async function fetchSpotVol(symbol: string): Promise<number | null> {
   } catch { return null }
 }
 
-// ── USDT.D — méthode TradingView ─────────────────────────────────────────────
-// USDT.D = market cap USDT / (total market cap - stablecoins market cap)
-async function fetchUsdtDominanceTradingView(): Promise<number> {
+// ── USDT.D avec historique RSI (méthode TradingView) ─────────────────────────
+async function fetchUsdtDominanceWithRSI(): Promise<{
+  dominance: number
+  dailyCloses: number[]
+  weeklyCloses: number[]
+}> {
   try {
-    const res = await fetch(`${COINGECKO}/global`, { next: { revalidate: 1800 } })
-    if (!res.ok) throw new Error('CoinGecko global error')
-    const data = await res.json()
+    const [usdtRes, totalRes, globalRes] = await Promise.all([
+      fetch(`${COINGECKO}/coins/tether/market_chart?vs_currency=usd&days=90&interval=daily`, { next: { revalidate: 1800 } }),
+      fetch(`${COINGECKO}/global/market_cap_chart?days=90`, { next: { revalidate: 1800 } }),
+      fetch(`${COINGECKO}/global`, { next: { revalidate: 1800 } }),
+    ])
 
-    const totalMarketCap: number = data.data?.total_market_cap?.usd ?? 0
-    const marketCapPct: Record<string, number> = data.data?.market_cap_percentage ?? {}
+    if (!globalRes.ok) throw new Error('CoinGecko error')
 
-    if (totalMarketCap === 0) throw new Error('Total market cap is 0')
+    const globalData = await globalRes.json()
+    const marketCapPct: Record<string, number> = globalData.data?.market_cap_percentage ?? {}
+    const currentTotal: number = globalData.data?.total_market_cap?.usd ?? 0
 
-    // Stablecoins à exclure du dénominateur (méthode TradingView)
-    const stablecoins = ['usdt', 'usdc', 'dai', 'busd', 'fdusd', 'tusd', 'usdp', 'gusd', 'usde', 'pyusd']
-    let stablecoinsMcap = 0
-    for (const stable of stablecoins) {
-      stablecoinsMcap += ((marketCapPct[stable] ?? 0) / 100) * totalMarketCap
+    // Dominance actuelle méthode TradingView
+    let stableMcap = 0
+    for (const s of STABLECOINS) {
+      stableMcap += ((marketCapPct[s] ?? 0) / 100) * currentTotal
+    }
+    const denominator = currentTotal - stableMcap
+    const usdtMcapCurrent = ((marketCapPct['usdt'] ?? 0) / 100) * currentTotal
+    const dominance = denominator > 0 ? Math.round((usdtMcapCurrent / denominator) * 10000) / 100 : 0
+
+    // Historique dominance journalier
+    let dailyCloses: number[] = []
+
+    if (usdtRes.ok && totalRes.ok) {
+      const usdtData = await usdtRes.json()
+      const totalData = await totalRes.json()
+      const usdtMcaps: [number, number][] = usdtData.market_caps || []
+      const totalMcaps: [number, number][] = totalData.market_cap_chart?.market_cap || []
+      const minLen = Math.min(usdtMcaps.length, totalMcaps.length)
+
+      for (let i = 0; i < minLen; i++) {
+        const usdtMc = usdtMcaps[i][1]
+        const totalMc = totalMcaps[i][1]
+        // Approx: stablecoins = 15% du total historiquement
+        const approxNonStable = totalMc * 0.85
+        if (approxNonStable > 0) {
+          dailyCloses.push(Math.round((usdtMc / approxNonStable) * 10000) / 100)
+        }
+      }
     }
 
-    const denominator = totalMarketCap - stablecoinsMcap
-    if (denominator <= 0) throw new Error('Denominator is 0')
+    // Weekly = 1 point tous les 7 jours
+    const weeklyCloses: number[] = []
+    for (let i = 0; i < dailyCloses.length; i += 7) {
+      weeklyCloses.push(dailyCloses[i])
+    }
+    if (dailyCloses.length > 0) {
+      weeklyCloses.push(dailyCloses[dailyCloses.length - 1])
+    }
 
-    const usdtMcap = ((marketCapPct['usdt'] ?? 0) / 100) * totalMarketCap
-    const dominance = (usdtMcap / denominator) * 100
-
-    return Math.round(dominance * 100) / 100
+    return { dominance, dailyCloses, weeklyCloses }
   } catch (err) {
     console.error('USDT.D error:', err)
-    return 0
+    return { dominance: 0, dailyCloses: [], weeklyCloses: [] }
   }
 }
 
-// ── Agrégation volumes CoinGecko (tous CEX confondus) ────────────────────────
-// Cache serveur 30 min — 2 appels max toutes les 30 min pour 500 tokens
+// ── Agrégation volumes CoinGecko ─────────────────────────────────────────────
 let cgVolumeCache: Map<string, number> = new Map()
 let cgVolumeCacheTime = 0
-const CG_CACHE_TTL = 30 * 60 * 1000 // 30 min
+const CG_CACHE_TTL = 30 * 60 * 1000
 
 async function fetchCoinGeckoVolumes(): Promise<Map<string, number>> {
   const now = Date.now()
   if (cgVolumeCache.size > 0 && now - cgVolumeCacheTime < CG_CACHE_TTL) {
     return cgVolumeCache
   }
-
   const map = new Map<string, number>()
   try {
-    // 2 pages de 250 = 500 tokens triés par market cap
     const pages = await Promise.all([
       fetch(`${COINGECKO}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=1&sparkline=false`, { next: { revalidate: 1800 } }),
       fetch(`${COINGECKO}/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=250&page=2&sparkline=false`, { next: { revalidate: 1800 } }),
     ])
-
     for (const res of pages) {
       if (!res.ok) continue
       const coins = await res.json()
       for (const coin of coins) {
         if (coin.symbol && coin.total_volume) {
-          // Clé = SYMBOL en majuscules (ex: BTC, ETH, SOL)
           map.set(coin.symbol.toUpperCase(), coin.total_volume)
         }
       }
     }
-
     cgVolumeCache = map
     cgVolumeCacheTime = now
   } catch (err) {
     console.error('CoinGecko volumes error:', err)
   }
-
   return map
 }
 
@@ -137,15 +153,29 @@ export async function GET(req: NextRequest) {
   // ── USDT.D ────────────────────────────────────────────────────────────────
   if (symbol === 'USDT.D') {
     try {
-      const dominance = await fetchUsdtDominanceTradingView()
+      const { dominance, dailyCloses, weeklyCloses } = await fetchUsdtDominanceWithRSI()
+
+      // Calcul RSI sur l'historique de dominance
+      const rsiD = dailyCloses.length >= MIN_BARS.D
+        ? computeRsi(dailyCloses, 14, MIN_BARS.D)
+        : { history: [], live: null, score: null, count: 0, incomplete: true }
+
+      const rsiW = weeklyCloses.length >= MIN_BARS.W
+        ? computeRsi(weeklyCloses, 14, MIN_BARS.W)
+        : { history: [], live: null, score: null, count: 0, incomplete: true }
+
       return Response.json({
         symbol: 'USDT.D',
-        daily:   { history: [], live: null, score: null, count: 0, incomplete: false },
-        weekly:  { history: [], live: null, score: null, count: 0, incomplete: false },
-        vol24h: 0, volSpot: null,
-        spotRatio: null, ratioFS: null,
-        spotRatioPct: null, ratioFSPct: null,
-        incomplete: false, isSpecial: true,
+        daily:  rsiD,
+        weekly: rsiW,
+        vol24h: 0,
+        volSpot: null,
+        spotRatio: null,
+        ratioFS: null,
+        spotRatioPct: null,
+        ratioFSPct: null,
+        incomplete: false,
+        isSpecial: true,
         dominance,
       })
     } catch (err) {
@@ -170,7 +200,6 @@ export async function GET(req: NextRequest) {
     const rsiW = computeRsi(weeklyCloses, 14, MIN_BARS.W)
     const incomplete = rsiD.incomplete || rsiW.incomplete
 
-    // Spot Ratio + Ratio F/S — null pour RWA
     const spotRatio = (!isRWA && volSpot !== null && volSpot > 0 && volFutures > 0)
       ? (volSpot / (volSpot + volFutures)) * 100
       : null
@@ -179,7 +208,6 @@ export async function GET(req: NextRequest) {
       ? volFutures / volSpot
       : null
 
-    // Volume agrégé tous exchanges (CoinGecko)
     const volAllExchanges = cgVolumes.get(base) ?? null
 
     return Response.json({
@@ -188,7 +216,7 @@ export async function GET(req: NextRequest) {
       weekly: rsiW,
       vol24h: volFutures,
       volSpot: isRWA ? null : volSpot,
-      volAllExchanges, // nouveau — volume total tous CEX/DEX
+      volAllExchanges,
       spotRatio,
       ratioFS,
       spotRatioPct: null,
@@ -200,4 +228,3 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: String(err) }, { status: 500 })
   }
 }
- 
