@@ -31,8 +31,13 @@ function rsiRGB(v: number): [number, number, number] {
 }
 
 function rsiText(v: number): string {
-  if (v >= 50) return `rgb(${Math.round(140 + v * 0.5)},255,${Math.round(140 + v * 0.5)})`
-  return `rgb(255,${Math.round(120 + v * 0.7)},${Math.round(120 + v * 0.7)})`
+  // Dark colors for readability in both light and dark mode
+  if (v >= 70) return '#00aa44'
+  if (v >= 60) return '#00882a'
+  if (v >= 50) return '#006622'
+  if (v >= 40) return '#884400'
+  if (v >= 30) return '#aa2200'
+  return '#cc1100'
 }
 
 function BarCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: number | null }) {
@@ -146,4 +151,5 @@ export default function HeatmapRow({ label, historyT, liveT, score, history, liv
     </div>
   )
 }
+ 
  
