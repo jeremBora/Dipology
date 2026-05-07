@@ -304,11 +304,24 @@ export default function ScreenerRow({
             &nbsp;·&nbsp;
             score W = <span style={{ fontFamily: "'Space Mono', monospace" }}>{wScore !== null && wScore !== undefined ? wScore.toFixed(1) + '%' : '—'}</span>
           </div>
+
+          {/* Discount Zone info */}
+          {data.inDiscountZone && data.livePrice && data.s1 && (
+            <div style={{ marginTop: 8, padding: '6px 10px', borderRadius: 6, background: 'rgba(0,255,68,0.06)', border: '1px solid rgba(0,255,68,0.2)', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 8, color: 'var(--accent)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>◆ Discount Zone</span>
+              <span style={{ fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace" }}>
+                Prix&nbsp;<span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>${data.livePrice < 1 ? data.livePrice.toFixed(5) : data.livePrice < 100 ? data.livePrice.toFixed(3) : data.livePrice.toFixed(1)}</span>
+                &nbsp;·&nbsp;
+                S1&nbsp;<span style={{ color: 'var(--accent)', fontWeight: 700 }}>${data.s1 < 1 ? data.s1.toFixed(5) : data.s1 < 100 ? data.s1.toFixed(3) : data.s1.toFixed(1)}</span>
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
   )
 }
+ 
  
  
  
