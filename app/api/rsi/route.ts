@@ -73,8 +73,12 @@ async function fetchUsdtDominanceWithRSI(): Promise<{
       stableMcap += ((marketCapPct[s] ?? 0) / 100) * currentTotal
     }
     const denominator = currentTotal - stableMcap
-    const usdtMcapCurrent = ((marketCapPct['usdt'] ?? 0) / 100) * currentTotal
-    const dominance = denominator > 0 ? Math.round((usdtMcapCurrent / denominator) * 10000) / 100 : 0
+    // STABLES.D = somme de tous les stablecoins / (total - stablecoins)
+    let stablesMcapCurrent = 0
+    for (const s of STABLECOINS) {
+      stablesMcapCurrent += ((marketCapPct[s] ?? 0) / 100) * currentTotal
+    }
+    const dominance = denominator > 0 ? Math.round((stablesMcapCurrent / denominator) * 10000) / 100 : 0
 
     // Historique dominance journalier
     let dailyCloses: number[] = []
@@ -84,10 +88,9 @@ async function fetchUsdtDominanceWithRSI(): Promise<{
       const usdtMcaps: [number, number][] = usdtData.market_caps || []
       // Utilise le ratio actuel dominance/mcapUSDT pour reconstruire l'historique
       const currentUsdtMc = usdtMcaps[usdtMcaps.length - 1]?.[1] || 1
-      // dominance actuelle = 7.x% -> on scale l'historique proportionnellement
+      // Approximation historique basée sur USDT mcap scalée à la dominance actuelle
       for (let i = 0; i < usdtMcaps.length; i++) {
         const usdtMc = usdtMcaps[i][1]
-        // Approximation: dominance historique ~ (usdtMc / currentUsdtMc) * dominance actuelle
         const approxDom = (usdtMc / currentUsdtMc) * dominance
         dailyCloses.push(Math.round(approxDom * 100) / 100)
       }
@@ -225,6 +228,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: String(err) }, { status: 500 })
   }
 }
+ 
  
  
  
