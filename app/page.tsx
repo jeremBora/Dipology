@@ -303,7 +303,7 @@ export default function Home() {
           style={{ position: 'absolute', top: 28, right: 0, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 15, transition: 'all 0.2s' }}
         >{theme === 'dark' ? '' : ''}</button>
 
-        <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: "'Dodger', 'Syne', sans-serif" }}>
           Dipology Screener
         </h1>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, textTransform: 'lowercase' }}>
@@ -737,6 +737,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
