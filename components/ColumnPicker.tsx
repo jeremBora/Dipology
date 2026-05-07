@@ -6,20 +6,12 @@ export type ExtraCol =
   | 'momentumWPrev'
   | 'scorePctD'
   | 'scorePctW'
-  | 'spotRatio'
-  | 'ratioFS'
-  | 'volSpot'
-  | 'volAllExchanges'
 
 export const EXTRA_COL_LABELS: Record<ExtraCol, string> = {
   momentumDPrev: 'Momentum D-1',
   momentumWPrev: 'Momentum W-1',
   scorePctD:     'Score % D',
   scorePctW:     'Score % W',
-  spotRatio:     'Spot Ratio',
-  ratioFS:       'Ratio F/S',
-  volSpot:       'S Vol 24H',
-  volAllExchanges: 'Vol Total (tous CEX)',
 }
 
 interface ColumnPickerProps {
@@ -76,3 +68,4 @@ export default function ColumnPicker({ active, onToggle }: ColumnPickerProps) {
     </div>
   )
 }
+ 
