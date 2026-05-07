@@ -210,6 +210,36 @@ export async function GET(req: NextRequest) {
 
     const volAllExchanges = cgVolumes.get(base) ?? null
 
+    // Calcul Pivot S1 sur la bougie daily fermée hier
+    // klines[0] = la plus ancienne, klines[-1] = en cours, klines[-2] = fermée hier
+    const prevCandle = dailyCloses.length >= 2 ? dailyCloses[dailyCloses.length - 2] : null
+    
+    // On a besoin du High et Low de la bougie d'hier — refetch avec OHLC
+    let s1: number | null = null
+    let livePrice: number | null = null
+    try {
+      const tickerRes = await fetch(`${FUTURES}/fapi/v1/ticker/price?symbol=${symbol}`, { headers: HEADERS, next: { revalidate: 10 } })
+      if (tickerRes.ok) {
+        const tickerData = await tickerRes.json()
+        livePrice = parseFloat(tickerData.price) || null
+      }
+      
+      const ohlcRes = await fetch(`${FUTURES}/fapi/v1/klines?symbol=${symbol}&interval=1d&limit=2`, { headers: HEADERS, next: { revalidate: 30 } })
+      if (ohlcRes.ok) {
+        const ohlc = await ohlcRes.json()
+        if (ohlc.length >= 2) {
+          const prev = ohlc[ohlc.length - 2]
+          const high  = parseFloat(prev[2])
+          const low   = parseFloat(prev[3])
+          const close = parseFloat(prev[4])
+          const pivot = (high + low + close) / 3
+          s1 = (2 * pivot) - high
+        }
+      }
+    } catch { /* silent */ }
+
+    const inDiscountZone = livePrice !== null && s1 !== null && livePrice < s1
+
     return Response.json({
       symbol,
       daily: rsiD,
@@ -223,11 +253,15 @@ export async function GET(req: NextRequest) {
       ratioFSPct: null,
       incomplete,
       isRWA,
+      s1,
+      livePrice,
+      inDiscountZone,
     })
   } catch (err) {
     return Response.json({ error: String(err) }, { status: 500 })
   }
 }
+ 
  
  
  
