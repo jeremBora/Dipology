@@ -407,7 +407,7 @@ export default function Home() {
         <div style={{
           display: 'grid', gridTemplateColumns: gridCols,
           background: headerBg, borderBottom: '1px solid var(--border)',
-          position: 'sticky', top: 0, zIndex: 20,
+          position: 'sticky', top: 88, zIndex: 19,
         }}>
           <ColBtn col="symbol"    label="Contrat"    align="left" />
           <ColBtn col="momentumD" label="Momentum D" />
@@ -737,6 +737,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
