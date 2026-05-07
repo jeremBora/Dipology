@@ -294,10 +294,10 @@ export default function ScreenerRow({
           </div>
 
           {/* Values on /10 note */}
-          <div style={{ marginTop: 8, fontSize: 9, color: 'var(--text-muted)', letterSpacing: 1 }}>
-            mom D = <span style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{fmtMom(dLive)}</span>
+          <div style={{ marginTop: 8, fontSize: 9, color: 'var(--text-primary)', letterSpacing: 1 }}>
+            mom D = <span style={{ color: 'var(--num-green)', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{fmtMom(dLive)}</span>
             &nbsp;·&nbsp;
-            mom W = <span style={{ color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{fmtMom(wLive)}</span>
+            mom W = <span style={{ color: 'var(--num-green)', fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{fmtMom(wLive)}</span>
             &nbsp;·&nbsp;
             score D = <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{dScore !== null && dScore !== undefined ? dScore.toFixed(1) + '%' : '—'}</span>
             &nbsp;·&nbsp;
