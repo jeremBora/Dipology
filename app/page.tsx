@@ -744,13 +744,14 @@ function PinnedCard({ data, theme, favorite, onFav }: {
           ))}
         </>
       )}
-      {isUSDT && (dominance === undefined || dominance === 0) && (
+      {isUSDT && dominance === undefined && (
         <div style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', padding: '20px 0' }}>chargement…</div>
       )}
     </div>
   )
 }
 
+ 
  
  
  
