@@ -268,7 +268,7 @@ export default function Home() {
         background: 'none', border: 'none',
         color: active ? 'var(--accent)' : 'var(--text-dim)',
         fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
-        fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 500, cursor: 'pointer',
+        fontFamily: "'Dodger', 'Inter', sans-serif", fontWeight: 500, cursor: 'pointer',
         display: 'flex', alignItems: 'center',
         justifyContent: align === 'left' ? 'flex-start' : 'center',
         gap: 4, padding: '10px 12px', width: '100%',
@@ -287,7 +287,7 @@ export default function Home() {
 
   function SimpleHdr({ label }: { label: string }) {
     return (
-      <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 500, padding: '10px 12px', textAlign: 'center' }}>
+      <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', fontFamily: "'Dodger', 'Inter', sans-serif", fontWeight: 500, padding: '10px 12px', textAlign: 'center' }}>
         {label}
       </div>
     )
@@ -303,7 +303,7 @@ export default function Home() {
           style={{ position: 'absolute', top: 28, right: 0, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 15, transition: 'all 0.2s' }}
         >{theme === 'dark' ? '' : ''}</button>
 
-        <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: "'Dodger', 'Syne', sans-serif" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: "'Dodger', 'Inter', sans-serif" }}>
           Dipology Screener
         </h1>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, textTransform: 'lowercase' }}>
@@ -343,7 +343,7 @@ export default function Home() {
             border: `1px solid ${activeTab === tab ? 'var(--accent)' : 'var(--border)'}`,
             color: activeTab === tab ? '#000' : 'var(--text-muted)',
             fontSize: 11, letterSpacing: 1, cursor: 'pointer',
-            fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 600,
+            fontFamily: "'Dodger', 'Inter', sans-serif", fontWeight: 600,
             transition: 'all 0.2s',
           }}>
             {tab === 'all' ? 'Tous' : tab === 'favorites' ? '★ Favoris' : '↑ Rising'}
@@ -357,7 +357,7 @@ export default function Home() {
           border: `1px solid ${hideMissing ? '#ff9f43' : 'var(--border)'}`,
           color: hideMissing ? '#ff9f43' : 'var(--text-dim)',
           fontSize: 10, letterSpacing: 1, cursor: 'pointer',
-          fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 600,
+          fontFamily: "'Dodger', 'Inter', sans-serif", fontWeight: 600,
         }}>Missing data ✕</button>
 
         {/* Search - pill */}
@@ -377,7 +377,7 @@ export default function Home() {
             style={{
               background: 'none', border: 'none', outline: 'none',
               color: 'var(--text-primary)',
-              fontFamily: "'Space Mono', monospace", fontSize: 10,
+              fontFamily: "'JetBrains Mono', monospace", fontSize: 10,
               width: 110,
             }}
           />
@@ -392,7 +392,7 @@ export default function Home() {
             background: isLoading ? 'var(--border)' : 'var(--accent)',
             border: 'none', color: isLoading ? 'var(--text-muted)' : '#000',
             fontSize: 11, letterSpacing: 1, cursor: isLoading ? 'not-allowed' : 'pointer',
-            fontFamily: "'Dodger', 'Syne', sans-serif", fontWeight: 700,
+            fontFamily: "'Dodger', 'Inter', sans-serif", fontWeight: 700,
             transition: 'all 0.2s',
           }}
         >{isLoading ? '↻ ...' : '↻ Refresh'}</button>
@@ -430,7 +430,7 @@ export default function Home() {
                 border: `1px solid ${pushMissingToBottom ? '#ff9f43' : 'var(--border)'}`,
                 color: pushMissingToBottom ? '#ff9f43' : 'var(--text-dim)',
                 borderRadius: 4, padding: '2px 7px', cursor: 'pointer',
-                fontSize: 10, fontFamily: "'Dodger', 'Syne', sans-serif",
+                fontSize: 10, fontFamily: "'Dodger', 'Inter', sans-serif",
               }}
             >↓?</button>
             <ColumnPicker active={extraCols} onToggle={col => {
@@ -549,7 +549,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <span style={{ color: accentColor, fontSize: 11 }}>{isBTC ? '★' : '◆'}</span>
-        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Space Mono', monospace" }}>{base}</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'JetBrains Mono', monospace" }}>{base}</span>
         {!isBTC && <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 1 }}>dominance</span>}
       </div>
 
@@ -563,7 +563,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
             ].map(m => (
               <div key={m.label} style={{ background: theme === 'dark' ? '#0a0f1e' : '#f5f9f5', borderRadius: 6, padding: '6px 10px' }}>
                 <div style={{ fontSize: 8, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 3 }}>{m.label}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 15, fontWeight: 700, color: m.color }}>{m.val}</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 700, color: m.color }}>{m.val}</div>
               </div>
             ))}
           </div>
@@ -572,12 +572,12 @@ function PinnedCard({ data, theme, favorite, onFav }: {
           </div>
           {[{ label: 'D', cells: dCells, rawCells: dHist, score: dScore }, { label: 'W', cells: wCells, rawCells: wHist, score: wScore }].map(row => (
             <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'stretch', marginBottom: 3 }}>
-              <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace", display: 'flex', alignItems: 'center' }}>{row.label}</span>
+              <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace", display: 'flex', alignItems: 'center' }}>{row.label}</span>
               {row.cells.slice(0, 9).map((v, i) => {
                 const raw = row.rawCells[row.rawCells.length - 9 + i] ?? null
                 if (v === null || raw === null) return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px' }}>
-                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'Space Mono, monospace' }}>—</span>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'JetBrains Mono, monospace' }}>—</span>
                     <div style={{ width: '80%', height: 2, borderRadius: 1, background: 'var(--border)' }} />
                   </div>
                 )
@@ -593,7 +593,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
                 const textC = rVal >= 70 ? '#00aa44' : rVal >= 60 ? '#00882a' : rVal >= 50 ? '#006622' : rVal >= 40 ? '#884400' : rVal >= 30 ? '#aa2200' : '#cc1100'
                 return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px' }}>
-                    <span style={{ fontSize: 9, fontWeight: 600, color: textC, fontFamily: 'Space Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
+                    <span style={{ fontSize: 9, fontWeight: 600, color: textC, fontFamily: 'JetBrains Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
                     <div style={{ width: '80%', height: 2, borderRadius: 1, background: `rgba(${r},${g},${b},0.2)` }}>
                       <div style={{ width: `${pct}%`, height: '100%', borderRadius: 1, background: `rgb(${r},${g},${b})` }} />
                     </div>
@@ -606,7 +606,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
                 const raw = v
                 if (v === null || raw === null) return (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px', border: '1px solid var(--border)', borderRadius: 4 }}>
-                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'Space Mono, monospace' }}>—</span>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'JetBrains Mono, monospace' }}>—</span>
                     <div style={{ width: '80%', height: 2, borderRadius: 1, background: 'var(--border)' }} />
                   </div>
                 )
@@ -621,7 +621,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
                 const textC = raw >= 70 ? '#00aa44' : raw >= 60 ? '#00882a' : raw >= 50 ? '#006622' : raw >= 40 ? '#884400' : raw >= 30 ? '#aa2200' : '#cc1100'
                 return (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px', border: `1px solid rgba(${r},${g},${b},0.5)`, borderRadius: 4, background: `rgba(${r},${g},${b},0.06)` }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: textC, fontFamily: 'Space Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: textC, fontFamily: 'JetBrains Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
                     <div style={{ width: '80%', height: 2, borderRadius: 1, background: `rgba(${r},${g},${b},0.2)` }}>
                       <div style={{ width: `${pct}%`, height: '100%', borderRadius: 1, background: `rgb(${r},${g},${b})` }} />
                     </div>
@@ -629,7 +629,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
                 )
               })()}
               <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 4px', background: theme === 'dark' ? '#0a0f1e' : '#f0f4f0', borderRadius: 4 }}>
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700, color: accentColor }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, color: accentColor }}>
                   {row.score !== null && row.score !== undefined ? (row.score/10).toFixed(2) : '—'}
                 </span>
                 {row.score !== null && row.score !== undefined && (
@@ -654,19 +654,19 @@ function PinnedCard({ data, theme, favorite, onFav }: {
             ].map(m => (
               <div key={m.label} style={{ background: theme === 'dark' ? '#0a0f1e' : '#f5f9f5', borderRadius: 6, padding: '6px 10px' }}>
                 <div style={{ fontSize: 8, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 3 }}>{m.label}</div>
-                <div style={{ fontFamily: "'Space Mono', monospace", fontSize: 15, fontWeight: 700, color: m.color }}>{m.val}</div>
+                <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 15, fontWeight: 700, color: m.color }}>{m.val}</div>
               </div>
             ))}
           </div>
           <div style={{ fontSize: 9, letterSpacing: 1, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 5 }}>Momentum Heatmap</div>
           {[{ label: 'D', cells: dCells, rawCells: dHist, score: dScore }, { label: 'W', cells: wCells, rawCells: wHist, score: wScore }].map(row => (
             <div key={row.label} style={{ display: 'flex', gap: 2, alignItems: 'stretch', marginBottom: 3 }}>
-              <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'Space Mono', monospace", display: 'flex', alignItems: 'center' }}>{row.label}</span>
+              <span style={{ width: 12, fontSize: 9, color: 'var(--text-muted)', fontFamily: "'JetBrains Mono', monospace", display: 'flex', alignItems: 'center' }}>{row.label}</span>
               {row.cells.slice(0, 9).map((v, i) => {
                 const raw = row.rawCells[row.rawCells.length - 9 + i] ?? null
                 if (v === null || raw === null) return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px' }}>
-                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'Space Mono, monospace' }}>—</span>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'JetBrains Mono, monospace' }}>—</span>
                     <div style={{ width: '80%', height: 2, borderRadius: 1, background: 'var(--border)' }} />
                   </div>
                 )
@@ -681,7 +681,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
                 const textC = raw >= 70 ? '#00aa44' : raw >= 60 ? '#00882a' : raw >= 50 ? '#006622' : raw >= 40 ? '#884400' : raw >= 30 ? '#aa2200' : '#cc1100'
                 return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px' }}>
-                    <span style={{ fontSize: 9, fontWeight: 600, color: textC, fontFamily: 'Space Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
+                    <span style={{ fontSize: 9, fontWeight: 600, color: textC, fontFamily: 'JetBrains Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
                     <div style={{ width: '80%', height: 2, borderRadius: 1, background: `rgba(${r},${g},${b},0.2)` }}>
                       <div style={{ width: `${pct}%`, height: '100%', borderRadius: 1, background: `rgb(${r},${g},${b})` }} />
                     </div>
@@ -693,7 +693,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
                 const v = row.cells[9] ?? null
                 if (v === null) return (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px', border: '1px solid var(--border)', borderRadius: 4 }}>
-                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'Space Mono, monospace' }}>—</span>
+                    <span style={{ fontSize: 9, color: 'var(--text-dim)', fontFamily: 'JetBrains Mono, monospace' }}>—</span>
                     <div style={{ width: '80%', height: 2, borderRadius: 1, background: 'var(--border)' }} />
                   </div>
                 )
@@ -708,7 +708,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
                 const textC = v >= 70 ? '#00aa44' : v >= 60 ? '#00882a' : v >= 50 ? '#006622' : v >= 40 ? '#884400' : v >= 30 ? '#aa2200' : '#cc1100'
                 return (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px', border: `1px solid rgba(${r},${g},${b},0.5)`, borderRadius: 4, background: `rgba(${r},${g},${b},0.06)` }}>
-                    <span style={{ fontSize: 9, fontWeight: 700, color: textC, fontFamily: 'Space Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
+                    <span style={{ fontSize: 9, fontWeight: 700, color: textC, fontFamily: 'JetBrains Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
                     <div style={{ width: '80%', height: 2, borderRadius: 1, background: `rgba(${r},${g},${b},0.2)` }}>
                       <div style={{ width: `${pct}%`, height: '100%', borderRadius: 1, background: `rgb(${r},${g},${b})` }} />
                     </div>
@@ -716,7 +716,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
                 )
               })()}
               <div style={{ flex: 1.5, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 4px', background: theme === 'dark' ? '#0a0f1e' : '#f0f4f0', borderRadius: 4 }}>
-                <span style={{ fontFamily: "'Space Mono', monospace", fontSize: 9, fontWeight: 700, color: '#ff9f0a' }}>
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, fontWeight: 700, color: '#ff9f0a' }}>
                   {row.score !== null && row.score !== undefined ? (row.score/10).toFixed(2) : '—'}
                 </span>
                 {row.score !== null && row.score !== undefined && (

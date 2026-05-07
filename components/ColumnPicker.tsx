@@ -38,7 +38,7 @@ export default function ColumnPicker({ active, onToggle }: ColumnPickerProps) {
         border: `1px solid ${open ? '#00ff4455' : '#1a4028'}`,
         borderRadius: 6, color: open ? '#00ff44' : '#4a9060',
         fontSize: 18, lineHeight: 1, padding: '2px 10px', cursor: 'pointer',
-        fontFamily: 'Syne, sans-serif', transition: 'all 0.2s', fontWeight: 400,
+        fontFamily: 'Inter, sans-serif', transition: 'all 0.2s', fontWeight: 400,
       }} title="Add columns">+</button>
 
       {open && (
@@ -52,7 +52,7 @@ export default function ColumnPicker({ active, onToggle }: ColumnPickerProps) {
               display: 'flex', alignItems: 'center', gap: 8, width: '100%',
               background: 'none', border: 'none', padding: '8px 14px',
               color: active.has(col) ? '#00ff44' : '#4a9060',
-              fontSize: 12, letterSpacing: 1, fontFamily: 'Syne, sans-serif',
+              fontSize: 12, letterSpacing: 1, fontFamily: 'Inter, sans-serif',
               cursor: 'pointer', textAlign: 'left', transition: 'color 0.15s', fontWeight: 600,
             }}
             onMouseEnter={e => (e.currentTarget as HTMLButtonElement).style.background = '#071409'}

@@ -112,7 +112,7 @@ export default function ScreenerRow({
   const showRatioFS   = extraCols.has('ratioFS' as ExtraCol)
   const showVolSpot   = extraCols.has('volSpot' as ExtraCol)
 
-  const dim = { color: 'var(--text-dim)', fontSize: 11, fontFamily: "'Space Mono', monospace" }
+  const dim = { color: 'var(--text-dim)', fontSize: 11, fontFamily: "'JetBrains Mono', monospace" }
 
   return (
     <div
@@ -144,7 +144,7 @@ export default function ScreenerRow({
             <span style={{ fontSize: 7, color: isOpen ? 'var(--accent-dim)' : 'var(--text-dim)', display: 'inline-block', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▶</span>
           )}
 
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 0.5, fontFamily: "'Space Mono', monospace" }}>{base}</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 0.5, fontFamily: "'JetBrains Mono', monospace" }}>{base}</span>
           <span style={{ fontSize: 9, fontWeight: 300, color: 'var(--text-muted)', letterSpacing: 1, textTransform: 'lowercase' }}>/usdt</span>
           
           <a href={`https://www.tradingview.com/chart/?symbol=BINANCE:${base}USDT.P`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ marginLeft: 4, opacity: 0.6, flexShrink: 0, color: 'var(--text-dim)' }} title="TradingView">📈</a>
@@ -158,7 +158,7 @@ export default function ScreenerRow({
         <div style={{ textAlign: 'right' }}>
           {data.loading ? <span style={dim}>…</span>
             : dLive !== null && dLive !== undefined
-            ? <span style={{ color: momColor(dLive), fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700 }}>{fmtMom(dLive)}</span>
+            ? <span style={{ color: momColor(dLive), fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700 }}>{fmtMom(dLive)}</span>
             : <span style={dim}>—</span>}
         </div>
 
@@ -166,18 +166,18 @@ export default function ScreenerRow({
         <div style={{ textAlign: 'right' }}>
           {data.loading ? <span style={dim}>…</span>
             : wLive !== null && wLive !== undefined
-            ? <span style={{ color: momColor(wLive), fontFamily: "'Space Mono', monospace", fontSize: 13, fontWeight: 700 }}>{fmtMom(wLive)}</span>
+            ? <span style={{ color: momColor(wLive), fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700 }}>{fmtMom(wLive)}</span>
             : <span style={dim}>—</span>}
         </div>
 
         {/* F Vol 24H */}
-        <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
+        <div style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
           {data.loading ? <span style={dim}>…</span> : formatVol(data.vol24h)}
         </div>
 
         {/* S Vol 24H */}
         {showVolSpot && (
-          <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
+          <div style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
             {data.loading ? <span style={dim}>…</span> : formatVol(data.volSpot)}
           </div>
         )}
@@ -187,7 +187,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : dPrev !== null && dPrev !== undefined
-              ? <span style={{ color: momColor(dPrev), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{fmtMom(dPrev)}</span>
+              ? <span style={{ color: momColor(dPrev), fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{fmtMom(dPrev)}</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -197,7 +197,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : wPrev !== null && wPrev !== undefined
-              ? <span style={{ color: momColor(wPrev), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{fmtMom(wPrev)}</span>
+              ? <span style={{ color: momColor(wPrev), fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{fmtMom(wPrev)}</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -207,7 +207,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : dScore !== null && dScore !== undefined
-              ? <span style={{ color: momColor(dScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{dScore.toFixed(1)}%</span>
+              ? <span style={{ color: momColor(dScore), fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{dScore.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -217,7 +217,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : wScore !== null && wScore !== undefined
-              ? <span style={{ color: momColor(wScore), fontFamily: "'Space Mono', monospace", fontSize: 12 }}>{wScore.toFixed(1)}%</span>
+              ? <span style={{ color: momColor(wScore), fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>{wScore.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -227,7 +227,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : data.spotRatio !== null && srPct !== null
-              ? <span style={{ color: percentileColor(srPct), fontFamily: "'Space Mono', monospace", fontSize: 12, fontWeight: 600 }}>{data.spotRatio.toFixed(1)}%</span>
+              ? <span style={{ color: percentileColor(srPct), fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600 }}>{data.spotRatio.toFixed(1)}%</span>
               : <span style={dim}>—</span>}
           </div>
         )}
@@ -237,7 +237,7 @@ export default function ScreenerRow({
           <div style={{ textAlign: 'right' }}>
             {data.loading ? <span style={dim}>…</span>
               : data.ratioFS !== null && fsPct !== null
-              ? <span style={{ color: percentileColor(fsPct), fontFamily: "'Space Mono', monospace", fontSize: 12, fontWeight: 600 }}>
+              ? <span style={{ color: percentileColor(fsPct), fontFamily: "'JetBrains Mono', monospace", fontSize: 12, fontWeight: 600 }}>
                   {data.ratioFS >= 100 ? data.ratioFS.toFixed(0) : data.ratioFS >= 10 ? data.ratioFS.toFixed(1) : data.ratioFS.toFixed(2)}x
                 </span>
               : <span style={dim}>—</span>}
@@ -246,7 +246,7 @@ export default function ScreenerRow({
 
         {/* Vol Total tous CEX */}
         {colVolAll && (
-          <div style={{ textAlign: 'right', fontFamily: "'Space Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
+          <div style={{ textAlign: 'right', fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--text-muted)' }}>
             {data.loading ? <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>…</span>
               : formatVol(data.volAllExchanges ?? null)}
           </div>
@@ -258,20 +258,20 @@ export default function ScreenerRow({
       {/* Heatmap panel */}
       {isOpen && !data.loading && (
         <div className="heatmap-animate" style={{ padding: '14px 20px 16px', background: 'var(--bg-heatmap)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, fontFamily: "'Dodger', 'Syne', sans-serif" }}>
+          <div style={{ fontSize: 9, color: 'var(--text-muted)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, fontFamily: "'Dodger', 'Inter', sans-serif" }}>
             {base} — Momentum Heatmap
           </div>
 
           <div style={{ display: 'flex', gap: 3, alignItems: 'center', marginBottom: 4 }}>
             <div style={{ width: 18, flexShrink: 0 }} />
             {Array(9).fill(0).map((_, i) => (
-              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--text-dim)', letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>
+              <div key={i} style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--text-dim)', letterSpacing: 1, fontFamily: "'JetBrains Mono', monospace" }}>
                 -{9 - i}
               </div>
             ))}
             <div style={{ width: 1, margin: '0 2px', flexShrink: 0, opacity: 0 }} />
-            <div style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>now</div>
-            <div style={{ flex: 1.5, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1, fontFamily: "'Space Mono', monospace" }}>score</div>
+            <div style={{ flex: 1, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1, fontFamily: "'JetBrains Mono', monospace" }}>now</div>
+            <div style={{ flex: 1.5, textAlign: 'center', fontSize: 8, color: 'var(--text-muted)', letterSpacing: 1, fontFamily: "'JetBrains Mono', monospace" }}>score</div>
           </div>
 
           <HeatmapRow
@@ -295,20 +295,20 @@ export default function ScreenerRow({
 
           {/* Values on /10 note */}
           <div style={{ marginTop: 8, fontSize: 9, color: 'var(--text-dim)', letterSpacing: 1 }}>
-            mom D = <span style={{ color: momColor(dLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(dLive)}</span>
+            mom D = <span style={{ color: momColor(dLive ?? 50), fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{fmtMom(dLive)}</span>
             &nbsp;·&nbsp;
-            mom W = <span style={{ color: momColor(wLive ?? 50), fontFamily: "'Space Mono', monospace", fontWeight: 700 }}>{fmtMom(wLive)}</span>
+            mom W = <span style={{ color: momColor(wLive ?? 50), fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>{fmtMom(wLive)}</span>
             &nbsp;·&nbsp;
-            score D = <span style={{ fontFamily: "'Space Mono', monospace" }}>{dScore !== null && dScore !== undefined ? dScore.toFixed(1) + '%' : '—'}</span>
+            score D = <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{dScore !== null && dScore !== undefined ? dScore.toFixed(1) + '%' : '—'}</span>
             &nbsp;·&nbsp;
-            score W = <span style={{ fontFamily: "'Space Mono', monospace" }}>{wScore !== null && wScore !== undefined ? wScore.toFixed(1) + '%' : '—'}</span>
+            score W = <span style={{ fontFamily: "'JetBrains Mono', monospace" }}>{wScore !== null && wScore !== undefined ? wScore.toFixed(1) + '%' : '—'}</span>
           </div>
 
           {/* Discount Zone info */}
           {data.inDiscountZone && data.livePrice && data.s1 && (
             <div style={{ marginTop: 8, padding: '6px 10px', borderRadius: 6, background: 'rgba(0,255,68,0.06)', border: '1px solid rgba(0,255,68,0.2)', display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 11, color: 'var(--accent)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600 }}>◆ Discount Zone</span>
-              <span style={{ fontSize: 13, fontFamily: "'Space Mono', monospace", fontWeight: 700, color: 'var(--text-primary)' }}>
+              <span style={{ fontSize: 13, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, color: 'var(--text-primary)' }}>
                 ${data.livePrice < 1 ? data.livePrice.toFixed(5) : data.livePrice < 100 ? data.livePrice.toFixed(3) : data.livePrice.toFixed(1)}
               </span>
             </div>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -65,7 +65,7 @@
 html, body {
   background: var(--bg-deep);
   color: var(--text-primary);
-  font-family: 'Syne', sans-serif;
+  font-family: 'Inter', sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
   transition: background 0.3s ease, color 0.3s ease;
@@ -113,4 +113,5 @@ body::before {
 
 .row-animate { animation: fadeInRow 0.25s ease both; }
 .heatmap-animate { animation: expandDown 0.2s ease both; transform-origin: top; }
+ 
  

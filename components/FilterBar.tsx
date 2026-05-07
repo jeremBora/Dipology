@@ -42,7 +42,7 @@ function FilterInput({ label, value, onChange, step }: {
         placeholder="—"
         style={{ width: label.includes('Vol') ? 60 : 38,
           background:'transparent', border:'none', outline:'none',
-          color:'#00ff44', fontSize:12, fontFamily:'Space Mono, monospace',
+          color:'#00ff44', fontSize:12, fontFamily:'JetBrains Mono, monospace',
           textAlign:'center', fontWeight:600 }}
       />
     </div>
@@ -59,7 +59,7 @@ function ToggleBtn({ label, active, onClick }: {
       border: `1px solid ${active ? '#ff9f4355' : '#1a4028'}`,
       borderRadius:8, padding:'5px 12px', cursor:'pointer',
       color: active ? '#ff9f43' : '#4a9060',
-      fontSize:11, letterSpacing:1, fontFamily:'Syne, sans-serif',
+      fontSize:11, letterSpacing:1, fontFamily:'Inter, sans-serif',
       fontWeight:600, transition:'all 0.2s',
     }}>
       <span style={{ fontSize:10 }}>{active ? '✓' : '○'}</span>
@@ -103,7 +103,7 @@ export default function FilterBar({ filters, onChange, activeCount, totalCount }
           <button onClick={() => onChange(defaultFilters)} style={{
             background:'none', border:'none', color:'#1a4028',
             fontSize:11, cursor:'pointer', letterSpacing:1,
-            fontFamily:'Syne, sans-serif', padding:'5px 8px', fontWeight:600,
+            fontFamily:'Inter, sans-serif', padding:'5px 8px', fontWeight:600,
           }}>✕ reset</button>
         )}
 

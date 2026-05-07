@@ -45,7 +45,7 @@ function BarCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: number
     return (
       <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
         display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
-        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-dim)', fontFamily:'Space Mono, monospace' }}>—</span>
+        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-dim)', fontFamily:'JetBrains Mono, monospace' }}>—</span>
         <div style={{ width:'80%', height:3, borderRadius:2, background:'var(--border)' }} />
       </div>
     )
@@ -58,7 +58,7 @@ function BarCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: number
     <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
       display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
       <span style={{ fontSize:13, fontWeight:600, color:textC,
-        fontFamily:'Space Mono, monospace', lineHeight:1 }}>
+        fontFamily:'JetBrains Mono, monospace', lineHeight:1 }}>
         {mom}
       </span>
       <div style={{ width:'80%', height:3, borderRadius:2,
@@ -76,7 +76,7 @@ function LiveCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: numbe
       <div style={{ flex:1, textAlign:'center', padding:'4px 2px 3px',
         display:'flex', flexDirection:'column', alignItems:'center', gap:4,
         border:'1px solid var(--border)', borderRadius:6 }}>
-        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-dim)', fontFamily:'Space Mono, monospace' }}>—</span>
+        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-dim)', fontFamily:'JetBrains Mono, monospace' }}>—</span>
         <div style={{ width:'80%', height:3, borderRadius:2, background:'var(--border)' }} />
       </div>
     )
@@ -91,7 +91,7 @@ function LiveCell({ valueT, valueRaw }: { valueT: number | null; valueRaw: numbe
       border:`1px solid rgba(${r},${g},${b},0.5)`, borderRadius:6,
       background:`rgba(${r},${g},${b},0.06)` }}>
       <span style={{ fontSize:13, fontWeight:700, color:textC,
-        fontFamily:'Space Mono, monospace', lineHeight:1 }}>
+        fontFamily:'JetBrains Mono, monospace', lineHeight:1 }}>
         {mom}
       </span>
       <div style={{ width:'80%', height:3, borderRadius:2,
@@ -108,7 +108,7 @@ function ScoreCell({ score }: { score: number | null }) {
     return (
       <div style={{ flex:1.5, textAlign:'center', padding:'4px 4px 3px',
         display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
-        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-dim)', fontFamily:'Space Mono, monospace' }}>—</span>
+        <span style={{ fontSize:13, fontWeight:600, color:'var(--text-dim)', fontFamily:'JetBrains Mono, monospace' }}>—</span>
         <div style={{ width:'80%', height:3, borderRadius:2, background:'var(--border)' }} />
       </div>
     )
@@ -120,7 +120,7 @@ function ScoreCell({ score }: { score: number | null }) {
     <div style={{ flex:1.5, textAlign:'center', padding:'4px 4px 3px',
       display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
       <span style={{ fontSize:13, fontWeight:700, color:textC,
-        fontFamily:'Space Mono, monospace', lineHeight:1 }}>
+        fontFamily:'JetBrains Mono, monospace', lineHeight:1 }}>
         {(score/10).toFixed(2)}
       </span>
       <div style={{ width:'80%', height:3, borderRadius:2,
