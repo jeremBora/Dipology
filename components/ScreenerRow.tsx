@@ -150,9 +150,6 @@ export default function ScreenerRow({
           {data.incomplete && (
             <span style={{ fontSize: 8, background: 'var(--warn-bg)', color: 'var(--warn)', border: '1px solid var(--warn-border)', padding: '1px 5px', borderRadius: 3, letterSpacing: 0.5, flexShrink: 0 }}>!</span>
           )}
-          {data.inDiscountZone && (
-            <span style={{ fontSize: 8, background: 'rgba(0,255,68,0.1)', color: 'var(--accent)', border: '1px solid rgba(0,255,68,0.3)', padding: '1px 5px', borderRadius: 3, letterSpacing: 0.5, flexShrink: 0 }}>S1</span>
-          )}
         </div>
 
         {/* Momentum D */}
@@ -320,6 +317,7 @@ export default function ScreenerRow({
     </div>
   )
 }
+ 
  
  
  
