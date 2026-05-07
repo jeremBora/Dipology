@@ -189,10 +189,6 @@ export default function Home() {
   function applyFiltersCheck(c: ContractData): boolean {
     if (hideMissing && c.incomplete) return false
     if (filters.priceUnderS1 && !c.inDiscountZone) return false
-    if (selectedCategory) {
-      const cat = getCategory(c.symbol)
-      if (cat !== selectedCategory) return false
-    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase()
       if (!c.symbol.toLowerCase().includes(q)) return false
@@ -356,8 +352,6 @@ export default function Home() {
             {tab === 'all' ? 'Tous' : tab === 'favorites' ? '★ Favoris' : '↑ Rising'}
           </button>
         ))}
-
-        <CategoryPicker selected={selectedCategory} onSelect={setSelectedCategory} contracts={contracts} />
 
         {/* Hide missing */}
         <button onClick={() => setHideMissing(p => !p)} style={{
@@ -750,6 +744,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
