@@ -606,7 +606,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
                 else if (rVal >= 30) { r=124; g=32; b=32 }
                 else { r=104; g=14; b=14 }
                 const pct = Math.min(Math.round(rVal), 100)
-                const textC = rVal >= 50 ? `rgb(${Math.round(140+rVal*0.5)},255,${Math.round(140+rVal*0.5)})` : `rgb(255,${Math.round(120+rVal*0.7)},${Math.round(120+rVal*0.7)})`
+                const textC = rVal >= 70 ? '#00aa44' : rVal >= 60 ? '#00882a' : rVal >= 50 ? '#006622' : rVal >= 40 ? '#884400' : rVal >= 30 ? '#aa2200' : '#cc1100'
                 return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '3px 1px' }}>
                     <span style={{ fontSize: 9, fontWeight: 600, color: textC, fontFamily: 'Space Mono, monospace', lineHeight: 1 }}>{(v/10).toFixed(1)}</span>
@@ -751,6 +751,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
