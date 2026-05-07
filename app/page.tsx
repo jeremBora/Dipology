@@ -85,7 +85,6 @@ export default function Home() {
   const [filters, setFilters]               = useState<Filters>(defaultFilters)
   const [theme, setTheme]                   = useState<'dark' | 'light'>('dark')
   const [pushMissingToBottom, setPushMissingToBottom] = useState(false)
-  const [filterBuyZone, setFilterBuyZone] = useState(false)
   const [favorites, setFavorites]           = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab]           = useState<'all' | 'favorites'>('all')
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
@@ -189,7 +188,7 @@ export default function Home() {
 
   function applyFiltersCheck(c: ContractData): boolean {
     if (hideMissing && c.incomplete) return false
-    if (filterBuyZone && !c.inDiscountZone) return false
+    if (filters.priceUnderS1 && !c.inDiscountZone) return false
     if (selectedCategory) {
       const cat = getCategory(c.symbol)
       if (cat !== selectedCategory) return false
@@ -751,6 +750,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
