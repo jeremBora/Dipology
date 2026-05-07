@@ -744,6 +744,11 @@ function PinnedCard({ data, theme, favorite, onFav }: {
           ))}
         </>
       )}
+      {isUSDT && (
+        <div style={{ fontSize: 9, color: 'var(--text-dim)' }}>
+          raw dominance: {String((data as ContractData & { dominance?: number }).dominance)}
+        </div>
+      )}
       {isUSDT && dominance === undefined && (
         <div style={{ fontSize: 11, color: 'var(--text-dim)', textAlign: 'center', padding: '20px 0' }}>chargement…</div>
       )}
@@ -751,6 +756,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
