@@ -11,7 +11,7 @@ type SortKey = 'symbol' | 'momentumD' | 'momentumW' | 'vol24h' | 'spotRatio' | '
 type SortDir = 'asc' | 'desc'
 
 const BATCH_SIZE = 20
-const PINNED_SYMBOLS = ['BTCUSDT', 'USDT.D']
+const PINNED_SYMBOLS = ['BTCUSDT', 'STABLES.D']
 const EXCLUDED_SYMBOLS = new Set(['BTCDOMUSDT', 'USDCUSDT'])
 
 // Favoris persistants via localStorage
@@ -171,7 +171,7 @@ export default function Home() {
       .then(r => r.json())
       .then(data => {
         const filtered = (data.symbols as string[]).filter(s => !EXCLUDED_SYMBOLS.has(s))
-        const allSymbols = ['USDT.D', ...filtered]
+        const allSymbols = ['STABLES.D', ...filtered]
         setSymbols(allSymbols)
         setTotalSymbols(allSymbols.length)
         const init = new Map<string, ContractData>()
@@ -318,7 +318,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Pinned cards - BTC + USDT.D above table */}
+      {/* Pinned cards - BTC + STABLES.D above table */}
       {pinned.length > 0 && (
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 28 }}>
           {pinned.map(row => (
@@ -486,9 +486,9 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   onFav: () => void
 }) {
   const isBTC  = data.symbol === 'BTCUSDT'
-  const isUSDT = data.symbol === 'USDT.D'
+  const isUSDT = data.symbol === 'STABLES.D'
   const accentColor = isBTC ? 'var(--accent)' : '#ff9f43'
-  const base = isBTC ? 'BTC' : 'USDT.D'
+  const base = isBTC ? 'BTC' : 'STABLES.D'
 
   const dLive  = data.daily?.live
   const wLive  = data.weekly?.live
@@ -513,7 +513,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
     return 'var(--num-red)'
   }
 
-  // USDT.D seuils basés sur l'analyse de marché :
+  // STABLES.D seuils basés sur l'analyse de marché :
   // < 5% = bull zone (capitaux en altcoins)
   // 5-6% = neutre
   // > 6% = bear zone (capitaux en stablecoins)
@@ -526,7 +526,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
 
   const signal = isUSDT ? usdtSignal(dominance) : null
 
-  // Donut chart params for USDT.D
+  // Donut chart params for STABLES.D
   // Scale: 0-10% dominance range shown on donut
   // At 4.82% on 0-10% scale = 48.2% of circle
   const domPct = dominance !== undefined ? Math.min(dominance / 10, 1) : 0
@@ -659,7 +659,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
         </>
       )}
 
-      {/* USDT.D content */}
+      {/* STABLES.D content */}
       {isUSDT && dominance !== undefined && (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
@@ -751,6 +751,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
