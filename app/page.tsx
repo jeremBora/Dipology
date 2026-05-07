@@ -4,8 +4,6 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import ScreenerRow, { ContractData } from '@/components/ScreenerRow'
 import ColumnPicker, { ExtraCol } from '@/components/ColumnPicker'
 import FilterBar, { Filters, defaultFilters, applyVolFilter } from '@/components/FilterBar'
-import { getCategory } from '@/lib/categories'
-import CategoryPicker from '@/components/CategoryPicker'
 
 type SortKey = 'symbol' | 'momentumD' | 'momentumW' | 'vol24h' | 'spotRatio' | 'ratioFS' | 'volSpot'
 type SortDir = 'asc' | 'desc'
@@ -87,7 +85,6 @@ export default function Home() {
   const [pushMissingToBottom, setPushMissingToBottom] = useState(false)
   const [favorites, setFavorites]           = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab]           = useState<'all' | 'favorites'>('all')
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [searchQuery, setSearchQuery]       = useState('')
   const [hideMissing, setHideMissing]       = useState(false)
   const [isLoading, setIsLoading]           = useState(false)
@@ -740,6 +737,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
