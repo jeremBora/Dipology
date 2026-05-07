@@ -151,7 +151,7 @@ export async function GET(req: NextRequest) {
   if (!symbol) return Response.json({ error: 'symbol required' }, { status: 400 })
 
   // ── USDT.D ────────────────────────────────────────────────────────────────
-  if (symbol === 'USDT.D') {
+  if (symbol === 'STABLES.D') {
     try {
       const { dominance, dailyCloses, weeklyCloses } = await fetchUsdtDominanceWithRSI()
 
@@ -228,6 +228,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: String(err) }, { status: 500 })
   }
 }
+ 
  
  
  
