@@ -776,4 +776,4 @@ function PinnedCard({ data, theme, favorite, onFav }: {
  
  
  
-  components/ScreenerRow.tsx
+ 
