@@ -9,7 +9,7 @@
   src: url('/fonts/dodger-title.ttf') format('truetype');
   font-weight: normal;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 /* DARK MODE (default) */
@@ -105,3 +105,4 @@ body::before {
 
 .row-animate { animation: fadeInRow 0.25s ease both; }
 .heatmap-animate { animation: expandDown 0.2s ease both; transform-origin: top; }
+ 
