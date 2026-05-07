@@ -147,29 +147,7 @@ export default function ScreenerRow({
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', letterSpacing: 0.5, fontFamily: "'Space Mono', monospace" }}>{base}</span>
           <span style={{ fontSize: 9, fontWeight: 300, color: 'var(--text-muted)', letterSpacing: 1, textTransform: 'lowercase' }}>/usdt</span>
           
-            href={`https://www.tradingview.com/chart/?symbol=BINANCE:${base}USDT.P`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            style={{ fontSize: 9, color: 'var(--text-dim)', textDecoration: 'none', marginLeft: 4, opacity: 0.6, flexShrink: 0 }}
-            title="Ouvrir sur TradingView"
-          >
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-              <path d="M1 10L10 1M10 1H4M10 1V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </a>
-          
-            href={`https://www.tradingview.com/chart/?symbol=BINANCE:${base}USDT.P`}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={e => e.stopPropagation()}
-            style={{ fontSize: 9, color: 'var(--text-dim)', textDecoration: 'none', marginLeft: 4, opacity: 0.6, flexShrink: 0 }}
-            title="Ouvrir sur TradingView"
-          >
-            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-              <path d="M1 10L10 1M10 1H4M10 1V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </a>
+          <a href={`https://www.tradingview.com/chart/?symbol=BINANCE:${base}USDT.P`} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ marginLeft: 4, opacity: 0.6, flexShrink: 0, color: 'var(--text-dim)' }} title="TradingView"><svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M1 10L10 1M10 1H4M10 1V7" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></a>
 
           {data.incomplete && (
             <span style={{ fontSize: 8, background: 'var(--warn-bg)', color: 'var(--warn)', border: '1px solid var(--warn-border)', padding: '1px 5px', borderRadius: 3, letterSpacing: 0.5, flexShrink: 0 }}>!</span>
@@ -340,6 +318,7 @@ export default function ScreenerRow({
     </div>
   )
 }
+ 
  
  
  
