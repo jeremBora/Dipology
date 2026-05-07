@@ -554,10 +554,6 @@ function PinnedCard({ data, theme, favorite, onFav }: {
         <span style={{ color: accentColor, fontSize: 11 }}>{isBTC ? '★' : '◆'}</span>
         <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', fontFamily: "'Space Mono', monospace" }}>{base}</span>
         {!isBTC && <span style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 1 }}>dominance</span>}
-
-        <button onClick={onFav} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: favorite ? '#f0a020' : 'var(--text-dim)' }}>
-          {favorite ? '★' : '☆'}
-        </button>
       </div>
 
       {/* BTC content */}
@@ -744,6 +740,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
