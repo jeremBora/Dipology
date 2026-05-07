@@ -335,7 +335,7 @@ export default function Home() {
       )}
 
       {/* Tabs: All / Favorites */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap', position: 'sticky', top: 0, zIndex: 20, background: 'var(--bg-deep)', paddingTop: 8, paddingBottom: 4 }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center', flexWrap: 'wrap', position: 'relative' }}>
         {(['all', 'favorites'] as const).map(tab => (
           <button key={tab} onClick={() => setActiveTab(tab)} style={{
             padding: '5px 14px', borderRadius: 20,
@@ -737,6 +737,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
