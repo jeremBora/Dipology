@@ -47,6 +47,9 @@ export interface ContractData {
   dominance?: number
   volAllExchanges?: number | null
   isRWA?: boolean
+  s1?: number | null
+  livePrice?: number | null
+  inDiscountZone?: boolean
 }
 
 function formatVol(v: number | null | undefined): string {
@@ -303,6 +306,7 @@ export default function ScreenerRow({
     </div>
   )
 }
+ 
  
  
  
