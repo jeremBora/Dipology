@@ -402,7 +402,7 @@ export default function Home() {
       <FilterBar filters={filters} onChange={setFilters} activeCount={normal.length} totalCount={normal.length} />
 
       {/* Table */}
-      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-panel)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'visible' }}>
         {/* Sticky header */}
         <div style={{
           display: 'grid', gridTemplateColumns: gridCols,
@@ -737,6 +737,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
