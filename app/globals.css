@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,7 +12,7 @@
   font-display: swap;
 }
 
-/* -- DARK MODE (default) ------------------------------------------- */
+/* DARK MODE (default) */
 :root {
   --bg-deep:      #020a04;
   --bg-panel:     #040d06;
@@ -30,13 +30,12 @@
   --warn:         #ff9f43;
   --warn-bg:      #ff6b0012;
   --warn-border:  #ff6b0033;
-  /* Chiffres harmonis-s dark */
   --num-green:    #00e676;
   --num-red:      #ff5252;
   --num-neutral:  #4a9060;
 }
 
-/* -- LIGHT MODE ----------------------------------------------------- */
+/* LIGHT MODE */
 [data-theme="light"] {
   --bg-deep:      #f6f9f6;
   --bg-panel:     #ffffff;
@@ -54,7 +53,6 @@
   --warn:         #c06010;
   --warn-bg:      #ff6b0010;
   --warn-border:  #ff6b0030;
-  /* Chiffres harmonis-s light - plus fonc-s et lisibles */
   --num-green:    #0a4a20;
   --num-red:      #8a0a0a;
   --num-neutral:  #336644;
@@ -82,14 +80,8 @@ body::before {
   background-image:
     radial-gradient(1px 1px at 10% 15%, #00ff4418 0%, transparent 100%),
     radial-gradient(1px 1px at 25% 40%, #00ff4412 0%, transparent 100%),
-    radial-gradient(1px 1px at 40% 10%, #00ff4410 0%, transparent 100%),
     radial-gradient(1px 1px at 55% 60%, #00ff4414 0%, transparent 100%),
-    radial-gradient(1px 1px at 70% 25%, #00ff4410 0%, transparent 100%),
-    radial-gradient(1px 1px at 85% 75%, #00ff4416 0%, transparent 100%),
-    radial-gradient(1px 1px at 90% 5%,  #00ff4412 0%, transparent 100%),
-    radial-gradient(1px 1px at 5%  85%, #00ff4410 0%, transparent 100%),
-    radial-gradient(1px 1px at 60% 90%, #00ff4414 0%, transparent 100%),
-    radial-gradient(1px 1px at 30% 70%, #00ff4410 0%, transparent 100%);
+    radial-gradient(1px 1px at 85% 75%, #00ff4416 0%, transparent 100%);
   pointer-events: none;
   z-index: 0;
 }
@@ -113,8 +105,3 @@ body::before {
 
 .row-animate { animation: fadeInRow 0.25s ease both; }
 .heatmap-animate { animation: expandDown 0.2s ease both; transform-origin: top; }
- 
- 
-  components/ScreenerRow.tsx
- 
- 
