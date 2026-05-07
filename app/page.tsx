@@ -444,7 +444,7 @@ export default function Home() {
         </div>
 
         {/* Normal rows */}
-        <div style={{ maxHeight: 'calc(100vh - 420px)', overflowY: 'auto' }}>
+        <div style={{}}>
           {normal.length === 0 && allLoaded && (
             <div style={{ padding: '40px 24px', textAlign: 'center', color: 'var(--text-dim)', fontSize: 12, letterSpacing: 2 }}>
               aucun résultat
@@ -737,6 +737,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
