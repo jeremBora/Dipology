@@ -165,7 +165,7 @@ export async function GET(req: NextRequest) {
         : { history: [], live: null, score: null, count: 0, incomplete: true }
 
       return Response.json({
-        symbol: 'USDT.D',
+        symbol: 'STABLES.D',
         daily:  rsiD,
         weekly: rsiW,
         vol24h: 0,
@@ -228,6 +228,7 @@ export async function GET(req: NextRequest) {
     return Response.json({ error: String(err) }, { status: 500 })
   }
 }
+ 
  
  
  
