@@ -268,7 +268,7 @@ export default function Home() {
         background: 'none', border: 'none',
         color: active ? 'var(--accent)' : 'var(--text-dim)',
         fontSize: 10, letterSpacing: 2, textTransform: 'uppercase',
-        fontFamily: "'Dodger', 'Inter', sans-serif", fontWeight: 500, cursor: 'pointer',
+        fontFamily: "'Inter', sans-serif", fontWeight: 500, cursor: 'pointer',
         display: 'flex', alignItems: 'center',
         justifyContent: align === 'left' ? 'flex-start' : 'center',
         gap: 4, padding: '10px 12px', width: '100%',
@@ -287,7 +287,7 @@ export default function Home() {
 
   function SimpleHdr({ label }: { label: string }) {
     return (
-      <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', fontFamily: "'Dodger', 'Inter', sans-serif", fontWeight: 500, padding: '10px 12px', textAlign: 'center' }}>
+      <div style={{ color: 'var(--text-dim)', fontSize: 10, letterSpacing: 2, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif", fontWeight: 500, padding: '10px 12px', textAlign: 'center' }}>
         {label}
       </div>
     )
@@ -303,7 +303,7 @@ export default function Home() {
           style={{ position: 'absolute', top: 28, right: 0, background: 'var(--bg-panel)', border: '1px solid var(--border)', color: 'var(--text-muted)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontSize: 15, transition: 'all 0.2s' }}
         >{theme === 'dark' ? '' : ''}</button>
 
-        <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: "'Dodger', 'Inter', sans-serif" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 200, color: 'var(--accent)', letterSpacing: 10, textTransform: 'uppercase', fontFamily: "'Inter', sans-serif" }}>
           Dipology Screener
         </h1>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 6, fontSize: 10, color: 'var(--text-muted)', letterSpacing: 3, textTransform: 'lowercase' }}>
@@ -343,7 +343,7 @@ export default function Home() {
             border: `1px solid ${activeTab === tab ? 'var(--accent)' : 'var(--border)'}`,
             color: activeTab === tab ? '#000' : 'var(--text-muted)',
             fontSize: 11, letterSpacing: 1, cursor: 'pointer',
-            fontFamily: "'Dodger', 'Inter', sans-serif", fontWeight: 600,
+            fontFamily: "'Inter', sans-serif", fontWeight: 600,
             transition: 'all 0.2s',
           }}>
             {tab === 'all' ? 'Tous' : tab === 'favorites' ? '★ Favoris' : '↑ Rising'}
@@ -357,7 +357,7 @@ export default function Home() {
           border: `1px solid ${hideMissing ? '#ff9f43' : 'var(--border)'}`,
           color: hideMissing ? '#ff9f43' : 'var(--text-dim)',
           fontSize: 10, letterSpacing: 1, cursor: 'pointer',
-          fontFamily: "'Dodger', 'Inter', sans-serif", fontWeight: 600,
+          fontFamily: "'Inter', sans-serif", fontWeight: 600,
         }}>Missing data ✕</button>
 
         {/* Search - pill */}
@@ -392,7 +392,7 @@ export default function Home() {
             background: isLoading ? 'var(--border)' : 'var(--accent)',
             border: 'none', color: isLoading ? 'var(--text-muted)' : '#000',
             fontSize: 11, letterSpacing: 1, cursor: isLoading ? 'not-allowed' : 'pointer',
-            fontFamily: "'Dodger', 'Inter', sans-serif", fontWeight: 700,
+            fontFamily: "'Inter', sans-serif", fontWeight: 700,
             transition: 'all 0.2s',
           }}
         >{isLoading ? '↻ ...' : '↻ Refresh'}</button>
@@ -430,7 +430,7 @@ export default function Home() {
                 border: `1px solid ${pushMissingToBottom ? '#ff9f43' : 'var(--border)'}`,
                 color: pushMissingToBottom ? '#ff9f43' : 'var(--text-dim)',
                 borderRadius: 4, padding: '2px 7px', cursor: 'pointer',
-                fontSize: 10, fontFamily: "'Dodger', 'Inter', sans-serif",
+                fontSize: 10, fontFamily: "'Inter', sans-serif",
               }}
             >↓?</button>
             <ColumnPicker active={extraCols} onToggle={col => {
@@ -737,6 +737,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
