@@ -418,8 +418,8 @@ export default function Home() {
           position: 'sticky', top: 0, zIndex: 20,
         }}>
           <ColBtn col="symbol"    label="Contrat"    align="left" />
-          <ColBtn col="momentumD" label="Mom D" />
-          <ColBtn col="momentumW" label="Mom W" />
+          <ColBtn col="momentumD" label="Momentum D" />
+          <ColBtn col="momentumW" label="Momentum W" />
           <ColBtn col="vol24h"    label="F Vol 24H" />
           {showVolSpot   && <ColBtn col="volSpot"   label="S Vol 24H" />}
           {colVolAll    && <SimpleHdr label="Vol Total" />}
@@ -751,6 +751,7 @@ function PinnedCard({ data, theme, favorite, onFav }: {
   )
 }
 
+ 
  
  
  
